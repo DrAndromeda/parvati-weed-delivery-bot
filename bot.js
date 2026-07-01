@@ -551,3 +551,12 @@ if (BOT_TOKEN) {
 } else {
   console.log('❌ Set BOT_TOKEN env variable');
 }
+
+// Graceful shutdown
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
+// Error handler to prevent crash on network errors
+bot.catch((err, ctx) => {
+  console.error('Bot error (caught):', err.message);
+});
