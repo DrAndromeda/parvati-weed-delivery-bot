@@ -164,15 +164,13 @@ bot.hears(['🛒 Cart', '🛒 Корзина'], async (ctx) => {
   await showCartInline(ctx.chat.id, ctx, false);
 });
 
-// All actions now use replyWithMenu which deletes old inline msgs
+// Send inline message; static keyboard is ALREADY set via start/lang_*
 async function replyWithMenu(chatId, ctx, text, inlineButtons) {
-  // Send a new message (not edit) with inline + static keyboard
   await ctx.reply(text, {
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: inlineButtons
-    },
-    ...staticKeyboard(chatId)
+    }
   });
 }
 
@@ -183,7 +181,7 @@ bot.hears(['🌍 Language', '🌍 Язык'], async (ctx) => {
   ];
   await ctx.reply('Choose your language / Выберите язык:', {
     reply_markup: { inline_keyboard: buttons },
-    ...staticKeyboard(ctx.chat.id)
+    
   });
 });
 
@@ -204,7 +202,7 @@ bot.hears(['❓ Help', '❓ Помощь'], async (ctx) => {
       '• Оплата: PromptPay / Наличные / Крипта\n\n' +
       'Вопросы? @dr_Andromeda'
     ),
-    { parse_mode: 'Markdown', ...staticKeyboard(chatId) }
+    { parse_mode: 'Markdown',  }
   );
 });
 
@@ -215,7 +213,7 @@ async function showCategories(chatId, ctx) {
   buttons.push([Markup.button.callback(t(chatId, '🔙 Main Menu', '🔙 Главное меню'), 'back_main')]);
   await ctx.reply(
     t(chatId, '🌿 *Choose a category:*', '🌿 *Выберите категорию:*'),
-    { reply_markup: { inline_keyboard: buttons }, parse_mode: 'Markdown', ...staticKeyboard(chatId) }
+    { reply_markup: { inline_keyboard: buttons }, parse_mode: 'Markdown',  }
   );
 }
 
@@ -381,7 +379,7 @@ async function showCartInline(chatId, ctx, isEdit = true) {
     if (isEdit) {
       await ctx.editMessageText(text, opts);
     } else {
-      await ctx.reply(text, { ...opts, ...staticKeyboard(chatId) });
+      await ctx.reply(text, { ...opts,  });
     }
     return;
   }
