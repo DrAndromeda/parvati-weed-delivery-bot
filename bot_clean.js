@@ -352,6 +352,22 @@ bot.action('confirm', async (ctx) => {
 bot.action('faq', async (ctx) => {
   const chatId=ctx.chat.id;
   const isEn=lang(chatId)==='en';
+
+// ─── BEST DEALS ───
+bot.action('specials', async (ctx) => {
+  const chatId=ctx.chat.id;
+  const isEn=lang(chatId)==='en';
+  const sorted=[...products].sort((a,b)=>b.stock-a.stock).slice(0,6);
+  let text=isEn?'🏆 *BEST SELLERS & TOP DEALS* 🏆\n\n':'🏆 *БЕСТСЕЛЛЕРЫ И ТОП ПРЕДЛОЖЕНИЯ* 🏆\n\n';
+  sorted.forEach(p=>{
+    text+=`👑 *${p.name_en}* — ${p.grade}\n`;
+    text+=`   💰 от ${p.price_joint||p.price_gram}฿ | 📦 ${p.stock}g | 🌸 ${p.type}\n`;
+    text+=`   ✨ ${p.effects.slice(0,3).join(', ')}\n\n`;
+  });
+  text+=isEn?'🔽 *Order now!* Tap Menu → Shop 🌿':'🔽 *Закажите сейчас!* Меню → Магазин 🌿';
+  await ctx.editMessageText(text,{parse_mode:'Markdown',reply_markup:{inline_keyboard:[[Markup.button.callback(isEn?'🛍️ Shop':'🛍️ Магазин','shop')],[Markup.button.callback(isEn?'🔙 Main Menu':'🔙 Главное меню','back')]]}});
+});
+
   const faqs=[
     {q:isEn?'🚀 Delivery time':'🚀 Время доставки', a:isEn?'30-60 min Bangkok, 60-120 min other':'30-60 мин Бангкок, 60-120 мин другие'},
     {q:'💳 Payment', a:isEn?'PromptPay QR, cash, crypto (USDT/BTC)':'PromptPay QR, наличные, крипта (USDT/BTC)'},
