@@ -132,12 +132,12 @@ bot.start(async (ctx) => {
 
 bot.action('lang_en', async (ctx) => {
   user[ctx.chat.id] = { lang:'en', cart:[] };
-  await ctx.editMessageText('🌿 Welcome! Choose:', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
+  await ctx.editMessageText('🌿 *Welcome!* 🌿\n\nChoose from the menu below 👇', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
 });
 
 bot.action('lang_ru', async (ctx) => {
   user[ctx.chat.id] = { lang:'ru', cart:[] };
-  await ctx.editMessageText('🌿 Добро пожаловать! Выберите:', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
+  await ctx.editMessageText('🌿 *Добро пожаловать!* 🌿\n\nВыберите в меню ниже 👇', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
 });
 
 bot.action('lang_menu', async (ctx) => {
