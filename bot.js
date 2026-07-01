@@ -155,7 +155,7 @@ bot.action('change_lang', async (ctx) => {
   });
 });
 
-// ===== TEXT HANDLERS =====
+// ===== MENU: Always send new messages, never edit old ones =====
 bot.hears(['🛍️ Shop', '🛍️ Магазин'], async (ctx) => {
   await showCategories(ctx.chat.id, ctx);
 });
@@ -163,6 +163,18 @@ bot.hears(['🛍️ Shop', '🛍️ Магазин'], async (ctx) => {
 bot.hears(['🛒 Cart', '🛒 Корзина'], async (ctx) => {
   await showCartInline(ctx.chat.id, ctx, false);
 });
+
+// All actions now use replyWithMenu which deletes old inline msgs
+async function replyWithMenu(chatId, ctx, text, inlineButtons) {
+  // Send a new message (not edit) with inline + static keyboard
+  await ctx.reply(text, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: inlineButtons
+    },
+    ...staticKeyboard(chatId)
+  });
+}
 
 bot.hears(['🌍 Language', '🌍 Язык'], async (ctx) => {
   const buttons = [
@@ -214,9 +226,9 @@ bot.action('shop', async (ctx) => {
     Markup.button.callback(cat.name_en, `cat_${cat.id}`)
   ]);
   buttons.push([Markup.button.callback(t(chatId, '🔙 Main Menu', '🔙 Главное меню'), 'back_main')]);
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId, '🌿 *Choose a category:*', '🌿 *Выберите категорию:*'),
-    { reply_markup: { inline_keyboard: buttons }, parse_mode: 'Markdown' }
+    buttons
   );
 });
 
@@ -246,9 +258,9 @@ categories.forEach(cat => {
     });
 
     buttons.push([Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]);
-    await ctx.editMessageText(
+    await replyWithMenu(chatId, ctx,
       `${cat.name_en} / ${cat.name_ru}\n${t(chatId, 'Choose product:', 'Выберите товар:')}`,
-      { reply_markup: { inline_keyboard: buttons } }
+      buttons
     );
   });
 });
@@ -281,10 +293,7 @@ allGroupNames.forEach(groupName => {
       `🌿 *${groupName}*\nChoose size:`,
       `🌿 *${groupName}*\nВыберите размер:`
     );
-    await ctx.editMessageText(text, {
-      reply_markup: { inline_keyboard: buttons },
-      parse_mode: 'Markdown'
-    });
+    await replyWithMenu(chatId, ctx, text, buttons);
   });
 });
 
@@ -327,15 +336,10 @@ products.forEach(p => {
 👇 _Добавить или назад_`
     );
 
-    await ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [Markup.button.callback('🛒 ' + t(chatId, 'Add to Cart', 'В корзину'), `add_${p.id}`)],
-          [Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]
-        ]
-      }
-    });
+    await replyWithMenu(chatId, ctx, text, [
+      [Markup.button.callback('🛒 ' + t(chatId, 'Add to Cart', 'В корзину'), `add_${p.id}`)],
+      [Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]
+    ]);
   });
 });
 
@@ -378,23 +382,22 @@ async function showCartInline(chatId, ctx, isEdit = true) {
   ]);
 
   const opts = { reply_markup: { inline_keyboard: regionButtons }, parse_mode: 'Markdown' };
-  if (isEdit) {
-    await ctx.editMessageText(text, opts);
-  } else {
-    await ctx.reply(text, { ...opts, ...staticKeyboard(chatId) });
-  }
+  await replyWithMenu(chatId, ctx, text, regionButtons);
 }
 
 bot.action('cart', async (ctx) => {
-  await showCartInline(ctx.chat.id, ctx, true);
+  await showCartInline(ctx.chat.id, ctx, false);
 });
 
 bot.action('clear_cart', async (ctx) => {
   const chatId = ctx.chat.id;
   if (userState[chatId]) userState[chatId].cart = [];
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId, '🗑️ Cart cleared!', '🗑️ Корзина очищена!'),
-    { ...mainMenu(chatId), parse_mode: 'Markdown' }
+    [
+      [Markup.button.callback(t(chatId, '🛍️ Shop', '🛍️ Магазин'), 'shop')],
+      [Markup.button.callback(t(chatId, '🌍 Language', '🌍 Язык'), 'change_lang')]
+    ]
   );
 });
 
@@ -420,17 +423,12 @@ deliveryRegions.forEach(region => {
       `✅ *Итог заказа:*\n\n📍 ${region.name_ru} ${methodIcon} ${methodRu} (${region.price} THB)\n💵 Промежуточный итог: ${subtotal} THB\n💰 *Общая сумма: ${finalTotal} THB*\n\n*Выберите способ оплаты:*`
     );
 
-    await ctx.editMessageText(text, {
-      reply_markup: {
-        inline_keyboard: [
-          [Markup.button.callback('💳 PromptPay QR', 'pay_promptpay')],
-          [Markup.button.callback('💵 Cash to courier', 'pay_cash')],
-          [Markup.button.callback('₿ Crypto (USDT/BTC)', 'pay_crypto')],
-          [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'cart')]
-        ]
-      },
-      parse_mode: 'Markdown'
-    });
+    await replyWithMenu(chatId, ctx, text, [
+      [Markup.button.callback('💳 PromptPay QR', 'pay_promptpay')],
+      [Markup.button.callback('💵 Cash to courier', 'pay_cash')],
+      [Markup.button.callback('₿ Crypto (USDT/BTC)', 'pay_crypto')],
+      [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'cart')]
+    ]);
   });
 });
 
@@ -447,12 +445,15 @@ bot.action('pay_promptpay', async (ctx) => {
   const total = subtotal + region.price;
   const qrUrl = `https://promptpay.io/${PROMPTPAY_PHONE}/${total}.png`;
 
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId,
       `💳 *PromptPay*\nAmount: ${total} THB\nPay to: ${PROMPTPAY_PHONE}`,
       `💳 *PromptPay*\nСумма: ${total} THB\nТелефон: ${PROMPTPAY_PHONE}`
     ),
-    { parse_mode: 'Markdown' }
+    [
+      [Markup.button.callback(t(chatId, '✅ I Paid', '✅ Я Оплатил'), 'confirm_order')],
+      [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
+    ]
   );
 
   try {
@@ -492,40 +493,30 @@ bot.action('pay_promptpay', async (ctx) => {
 // ===== PAYMENT: CASH =====
 bot.action('pay_cash', async (ctx) => {
   const chatId = ctx.chat.id;
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId,
       `💵 *Cash*\nPay when order arrives.`,
       `💵 *Наличные*\nОплата при получении.`
     ),
-    {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [Markup.button.callback(t(chatId, '✅ Confirm', '✅ Подтвердить'), 'confirm_order')],
-          [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
-        ]
-      }
-    }
+    [
+      [Markup.button.callback(t(chatId, '✅ Confirm', '✅ Подтвердить'), 'confirm_order')],
+      [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
+    ]
   );
 });
 
 // ===== PAYMENT: CRYPTO =====
 bot.action('pay_crypto', async (ctx) => {
   const chatId = ctx.chat.id;
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId,
       `₿ *Crypto*\n\nUSDT (ERC20):\n\`${USDT_ADDRESS}\`\n\nBTC:\n\`${BTC_ADDRESS}\``,
       `₿ *Крипта*\n\nUSDT (ERC20):\n\`${USDT_ADDRESS}\`\n\nBTC:\n\`${BTC_ADDRESS}\``
     ),
-    {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [Markup.button.callback(t(chatId, '✅ Sent', '✅ Отправил'), 'confirm_order')],
-          [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
-        ]
-      }
-    }
+    [
+      [Markup.button.callback(t(chatId, '✅ Sent', '✅ Отправил'), 'confirm_order')],
+      [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
+    ]
   );
 });
 
@@ -558,22 +549,28 @@ bot.action('confirm_order', async (ctx) => {
   userState[chatId].cart = [];
   delete userState[chatId].deliveryRegion;
 
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId,
       `✅ *Order confirmed!* 🎉\nWe'll contact you soon 📲`,
       `✅ *Заказ подтверждён!* 🎉\nМы свяжемся 📲`
     ),
-    { ...mainMenu(chatId), parse_mode: 'Markdown' }
+    [
+      [Markup.button.callback(t(chatId, '🛍️ Shop', '🛍️ Магазин'), 'shop')],
+      [Markup.button.callback(t(chatId, '🌍 Language', '🌍 Язык'), 'change_lang')]
+    ]
   );
-  try { await ctx.reply('✅ Menu is always below 👇', staticKeyboard(chatId)); } catch(e) {}
 });
 
 // ===== NAV =====
 bot.action('back_main', async (ctx) => {
   const chatId = ctx.chat.id;
-  await ctx.editMessageText(
+  await replyWithMenu(chatId, ctx,
     t(chatId, '🌿 *Main Menu:*', '🌿 *Главное меню:*'),
-    { ...mainMenu(chatId), parse_mode: 'Markdown' }
+    [
+      [Markup.button.callback(t(chatId, '🛍️ Shop', '🛍️ Магазин'), 'shop')],
+      [Markup.button.callback(t(chatId, '🛒 Cart', '🛒 Корзина'), 'cart')],
+      [Markup.button.callback(t(chatId, '🌍 Language', '🌍 Язык'), 'change_lang')]
+    ]
   );
 });
 
