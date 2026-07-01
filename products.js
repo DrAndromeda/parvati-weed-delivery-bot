@@ -1,5 +1,5 @@
-// Parvati weed Thailand - Premium Product Catalog
-// Enhanced with effects, flavors, THC%, and detailed descriptions
+// Parvati 420 — Premium Botanical Collection
+// Neutral descriptions for safety compliance
 // Flat product list includes both standalone products and size-variant products.
 // Size variants are grouped under a common strain name for size selection UI.
 
@@ -29,42 +29,42 @@ const products = [
 
   // ---- FLOWER (size variants first, then standalone) ----
   // OG Kush (3 sizes)
-  { id: 'f1', cat: 'flower', name_en: 'OG Kush 1g', name_ru: 'OG Kush 1г', price: 300, desc_en: 'Hybrid · 22-26% THC · Earthy, pine, citrus · Euphoric, relaxed', desc_ru: 'Гибрид · 22-26% ТГК · Землистый, сосна, цитрус · Эйфория, расслабление' },
-  { id: 'f2', cat: 'flower', name_en: 'OG Kush 3g', name_ru: 'OG Kush 3г', price: 800, desc_en: 'Hybrid · 22-26% THC · Best value 3g pack', desc_ru: 'Гибрид · 22-26% ТГК · Выгодная упаковка 3г' },
-  { id: 'f3', cat: 'flower', name_en: 'OG Kush 5g', name_ru: 'OG Kush 5г', price: 1200, desc_en: 'Hybrid · 22-26% THC · Best deal 5g pack', desc_ru: 'Гибрид · 22-26% ТГК · Лучшая цена 5г' },
+  { id: 'f1', cat: 'flower', name_en: 'OG Kush 1g', name_ru: 'OG Kush 1г', price: 300, desc_en: 'Hybrid · Earthy, pine, citrus · Well-balanced', desc_ru: 'Гибрид · Землистый, сосна, цитрус · Сбалансированный' },
+  { id: 'f2', cat: 'flower', name_en: 'OG Kush 3g', name_ru: 'OG Kush 3г', price: 800, desc_en: 'Hybrid · Best value 3g pack', desc_ru: 'Гибрид · Выгодная упаковка 3г' },
+  { id: 'f3', cat: 'flower', name_en: 'OG Kush 5g', name_ru: 'OG Kush 5г', price: 1200, desc_en: 'Hybrid · Best deal 5g pack', desc_ru: 'Гибрид · Лучшая цена 5г' },
   // Amnesia Haze (2 sizes)
-  { id: 'f4', cat: 'flower', name_en: 'Amnesia Haze 1g', name_ru: 'Amnesia Haze 1г', price: 250, desc_en: 'Sativa · 20-24% THC · Citrus, earthy · Energetic, creative', desc_ru: 'Сатива · 20-24% ТГК · Цитрус, земля · Бодрит, креатив' },
-  { id: 'f5', cat: 'flower', name_en: 'Amnesia Haze 3g', name_ru: 'Amnesia Haze 3г', price: 700, desc_en: 'Sativa · 20-24% THC · 3g pack best value', desc_ru: 'Сатива · 20-24% ТГК · Упаковка 3г' },
+  { id: 'f4', cat: 'flower', name_en: 'Amnesia Haze 1g', name_ru: 'Amnesia Haze 1г', price: 250, desc_en: 'Sativa · Citrus, earthy · Energetic, creative', desc_ru: 'Сатива · Цитрус, земля · Бодрит, креатив' },
+  { id: 'f5', cat: 'flower', name_en: 'Amnesia Haze 3g', name_ru: 'Amnesia Haze 3г', price: 700, desc_en: 'Sativa · 3g pack best value', desc_ru: 'Сатива · Упаковка 3г' },
   // Northern Lights (2 sizes)
-  { id: 'f6', cat: 'flower', name_en: 'Northern Lights 1g', name_ru: 'Northern Lights 1г', price: 200, desc_en: 'Indica · 18-22% THC · Sweet, spicy · Deep relaxation, sleep', desc_ru: 'Индика · 18-22% ТГК · Сладкий, пряный · Глубокий релакс, сон' },
-  { id: 'f7', cat: 'flower', name_en: 'Northern Lights 3g', name_ru: 'Northern Lights 3г', price: 550, desc_en: 'Indica · 18-22% THC · 3g pack', desc_ru: 'Индика · 18-22% ТГК · Упаковка 3г' },
+  { id: 'f6', cat: 'flower', name_en: 'Northern Lights 1g', name_ru: 'Northern Lights 1г', price: 200, desc_en: 'Indica · Sweet, spicy · Deep relaxation', desc_ru: 'Индика · Сладкий, пряный · Глубокий релакс' },
+  { id: 'f7', cat: 'flower', name_en: 'Northern Lights 3g', name_ru: 'Northern Lights 3г', price: 550, desc_en: 'Indica · 3g pack', desc_ru: 'Индика · Упаковка 3г' },
   // Blue Dream (standalone, no group)
-  { id: 'f8', cat: 'flower', name_en: 'Blue Dream 1g', name_ru: 'Blue Dream 1г', price: 280, desc_en: 'Hybrid · 20-24% THC · Sweet berry, vanilla · Creative, uplifting · Perfect all-day strain', desc_ru: 'Гибрид · 20-24% ТГК · Сладкая ягода, ваниль · Креатив, подъём · Идеален на весь день' },
+  { id: 'f8', cat: 'flower', name_en: 'Blue Dream 1g', name_ru: 'Blue Dream 1г', price: 280, desc_en: 'Hybrid · Sweet berry, vanilla · Creative, uplifting', desc_ru: 'Гибрид · Сладкая ягода, ваниль · Креатив, подъём' },
   // Gelato (2 sizes)
-  { id: 'f9', cat: 'flower', name_en: 'Gelato 1g', name_ru: 'Gelato 1г', price: 350, desc_en: 'Hybrid · 20-25% THC · Sweet, creamy, berry · Relaxed, happy', desc_ru: 'Гибрид · 20-25% ТГК · Сладкий, кремовый, ягода · Расслабление, счастье' },
-  { id: 'f10', cat: 'flower', name_en: 'Gelato 3g', name_ru: 'Gelato 3г', price: 950, desc_en: 'Hybrid · 20-25% THC · Premium 3g pack', desc_ru: 'Гибрид · 20-25% ТГК · Премиум 3г' },
+  { id: 'f9', cat: 'flower', name_en: 'Gelato 1g', name_ru: 'Gelato 1г', price: 350, desc_en: 'Hybrid · Sweet, creamy, berry · Relaxed, happy', desc_ru: 'Гибрид · Сладкий, кремовый, ягода · Расслабление' },
+  { id: 'f10', cat: 'flower', name_en: 'Gelato 3g', name_ru: 'Gelato 3г', price: 950, desc_en: 'Hybrid · Premium 3g pack', desc_ru: 'Гибрид · Премиум 3г' },
   // Thai Stick (2 sizes)
-  { id: 'f11', cat: 'flower', name_en: 'Thai Stick 1g', name_ru: 'Thai Stick 1г', price: 80, desc_en: 'Sativa · 14-18% THC · Earthy, herbal · Light, budget-friendly', desc_ru: 'Сатива · 14-18% ТГК · Землистый, травяной · Лёгкий, бюджетный' },
-  { id: 'f12', cat: 'flower', name_en: 'Thai Stick 5g', name_ru: 'Thai Stick 5г', price: 350, desc_en: 'Sativa · 14-18% THC · 5g pack best deal', desc_ru: 'Сатива · 14-18% ТГК · Упаковка 5г' },
+  { id: 'f11', cat: 'flower', name_en: 'Thai Stick 1g', name_ru: 'Thai Stick 1г', price: 80, desc_en: 'Sativa · Earthy, herbal · Light, budget-friendly', desc_ru: 'Сатива · Землистый, травяной · Лёгкий, бюджетный' },
+  { id: 'f12', cat: 'flower', name_en: 'Thai Stick 5g', name_ru: 'Thai Stick 5г', price: 350, desc_en: 'Sativa · 5g pack best deal', desc_ru: 'Сатива · Упаковка 5г' },
   // Premium standalone strains
-  { id: 'f13', cat: 'flower', name_en: 'Imperium X Black Berry Pop Pop', name_ru: 'Imperium X Black Berry Pop Pop', price: 1350, desc_en: 'Sativa 60% · 25-28% THC · Berry, diesel · Uplifting, euphoric, energetic · Premium exotic strain', desc_ru: 'Сатива 60% · 25-28% ТГК · Ягода, дизель · Подъём, эйфория, энергия · Премиум экзотик' },
-  { id: 'f14', cat: 'flower', name_en: 'Black Berry Pop (2s)', name_ru: 'Black Berry Pop (2s)', price: 509, desc_en: 'Hybrid · 22-26% THC · Sweet berry, grape · Relaxed, happy, creative', desc_ru: 'Гибрид · 22-26% ТГК · Сладкая ягода, виноград · Релакс, счастье, креатив' },
-  { id: 'f15', cat: 'flower', name_en: 'OG Kush Face Off OG', name_ru: 'OG Kush Face Off OG', price: 800, desc_en: 'Hybrid 55% Sativa · 24-28% THC · Diesel, pine, lemon · Potent, long-lasting · Heavy hitter', desc_ru: 'Гибрид 55% Сатива · 24-28% ТГК · Дизель, сосна, лимон · Мощный, долгий эффект' },
+  { id: 'f13', cat: 'flower', name_en: 'Imperium X Black Berry Pop Pop', name_ru: 'Imperium X Black Berry Pop Pop', price: 1350, desc_en: 'Sativa 60% · Berry, diesel · Uplifting, energetic', desc_ru: 'Сатива 60% · Ягода, дизель · Подъём, энергия' },
+  { id: 'f14', cat: 'flower', name_en: 'Black Berry Pop (2s)', name_ru: 'Black Berry Pop (2s)', price: 509, desc_en: 'Hybrid · Sweet berry, grape · Relaxed, happy', desc_ru: 'Гибрид · Сладкая ягода, виноград · Релакс' },
+  { id: 'f15', cat: 'flower', name_en: 'OG Kush Face Off OG', name_ru: 'OG Kush Face Off OG', price: 800, desc_en: 'Hybrid · Diesel, pine, lemon · Potent, long-lasting', desc_ru: 'Гибрид · Дизель, сосна, лимон · Мощный, долгий' },
 
   // ---- EDIBLES ----
-  { id: 'e1', cat: 'edibles', name_en: 'Gummy Bears 50mg', name_ru: 'Мармелад 50мг', price: 200, desc_en: '5 pieces × 10mg each · Fruity assorted flavors · Mild, social buzz', desc_ru: '5 штук по 10мг · Фруктовые вкусы · Мягкий, социальный эффект' },
-  { id: 'e2', cat: 'edibles', name_en: 'Gummy Bears 100mg', name_ru: 'Мармелад 100мг', price: 350, desc_en: '10 pieces × 10mg each · Fruity mix · Medium strength', desc_ru: '10 штук по 10мг · Фруктовая смесь · Средняя сила' },
-  { id: 'e3', cat: 'edibles', name_en: 'Gummy Bears 200mg', name_ru: 'Мармелад 200мг', price: 600, desc_en: '20 pieces × 10mg each · Fruity mix · Strong, long-lasting', desc_ru: '20 штук по 10мг · Фруктовая смесь · Сильный, долгий эффект' },
-  { id: 'e4', cat: 'edibles', name_en: 'Choco Brownie 100mg', name_ru: 'Брауни 100мг', price: 250, desc_en: 'Rich dark chocolate brownie · 100mg THC · Delicious & potent', desc_ru: 'Брауни из тёмного шоколада · 100мг ТГК · Вкусно и мощно' },
-  { id: 'e5', cat: 'edibles', name_en: 'Choco Brownie 200mg', name_ru: 'Брауни 200мг', price: 400, desc_en: 'Double strength dark chocolate · 200mg THC · For experienced users', desc_ru: 'Двойная сила · 200мг ТГК · Для опытных' },
-  { id: 'e6', cat: 'edibles', name_en: 'Cookies 150mg', name_ru: 'Печенье 150мг', price: 300, desc_en: '4 cookies × 37.5mg each · Classic chocolate chip · Perfect sharing pack', desc_ru: '4 печенья по 37.5мг · Классическое шоколадное · Отлично на компанию' },
+  { id: 'e1', cat: 'edibles', name_en: 'Gummy Bears 50mg', name_ru: 'Мармелад 50мг', price: 200, desc_en: '5 pieces · Fruity assorted flavors', desc_ru: '5 штук · Фруктовые вкусы' },
+  { id: 'e2', cat: 'edibles', name_en: 'Gummy Bears 100mg', name_ru: 'Мармелад 100мг', price: 350, desc_en: '10 pieces · Fruity mix', desc_ru: '10 штук · Фруктовая смесь' },
+  { id: 'e3', cat: 'edibles', name_en: 'Gummy Bears 200mg', name_ru: 'Мармелад 200мг', price: 600, desc_en: '20 pieces · Fruity mix', desc_ru: '20 штук · Фруктовая смесь' },
+  { id: 'e4', cat: 'edibles', name_en: 'Choco Brownie 100mg', name_ru: 'Брауни 100мг', price: 250, desc_en: 'Rich dark chocolate brownie', desc_ru: 'Брауни из тёмного шоколада' },
+  { id: 'e5', cat: 'edibles', name_en: 'Choco Brownie 200mg', name_ru: 'Брауни 200мг', price: 400, desc_en: 'Double strength dark chocolate', desc_ru: 'Двойная сила' },
+  { id: 'e6', cat: 'edibles', name_en: 'Cookies 150mg', name_ru: 'Печенье 150мг', price: 300, desc_en: '4 cookies · Classic chocolate chip', desc_ru: '4 печенья · Классическое шоколадное' },
 
   // ---- PRE-ROLLS ----
-  { id: 'p1', cat: 'prerolls', name_en: 'Joint 0.5g', name_ru: 'Косяк 0.5г', price: 100, desc_en: 'Premium flower · Single joint · Easy & convenient · Perfect for trying', desc_ru: 'Премиум цвет · Один косяк · Удобно · Попробовать сорт' },
-  { id: 'p2', cat: 'prerolls', name_en: 'Joint 1g', name_ru: 'Косяк 1г', price: 180, desc_en: 'Premium flower · King size joint · Long session', desc_ru: 'Премиум цвет · Кинг сайз · Долгая сессия' },
-  { id: 'p3', cat: 'prerolls', name_en: '3-Pack 0.5g', name_ru: '3-Pack 0.5г', price: 250, desc_en: '3 premium joints × 0.5g · Great value pack', desc_ru: '3 премиум косяка по 0.5г · Выгодный набор' },
-  { id: 'p4', cat: 'prerolls', name_en: '5-Pack 0.5g', name_ru: '5-Pack 0.5г', price: 400, desc_en: '5 premium joints × 0.5g · Party pack · Best deal', desc_ru: '5 премиум косяков по 0.5г · На компанию' },
-  { id: 'p5', cat: 'prerolls', name_en: 'Infused Joint', name_ru: 'Премиум косяк', price: 350, desc_en: 'Premium flower + kief + cannabis oil · Triple threat · Very potent', desc_ru: 'Премиум цвет + киф + масло · Тройной удар · Очень мощный' },
+  { id: 'p1', cat: 'prerolls', name_en: 'Joint 0.5g', name_ru: 'Косяк 0.5г', price: 100, desc_en: 'Premium · Single · Easy & convenient', desc_ru: 'Премиум · Один · Удобно' },
+  { id: 'p2', cat: 'prerolls', name_en: 'Joint 1g', name_ru: 'Косяк 1г', price: 180, desc_en: 'Premium · King size', desc_ru: 'Премиум · Кинг сайз' },
+  { id: 'p3', cat: 'prerolls', name_en: '3-Pack 0.5g', name_ru: '3-Pack 0.5г', price: 250, desc_en: '3 premium × 0.5g · Great value', desc_ru: '3 премиум по 0.5г · Выгодный набор' },
+  { id: 'p4', cat: 'prerolls', name_en: '5-Pack 0.5g', name_ru: '5-Pack 0.5г', price: 400, desc_en: '5 premium × 0.5g · Best deal', desc_ru: '5 премиум по 0.5г · На компанию' },
+  { id: 'p5', cat: 'prerolls', name_en: 'Infused Joint', name_ru: 'Премиум косяк', price: 350, desc_en: 'Premium infused · Triple threat', desc_ru: 'Премиум · Тройной удар' },
 
   // ---- ACCESSORIES ----
   { id: 'a1', cat: 'accessory', name_en: 'Rolling Papers 50', name_ru: 'Бумаги 50', price: 50, desc_en: 'King size slim · Ultra-thin · Natural gum', desc_ru: 'Кинг сайз слим · Ультратонкие · Натуральная камедь' },
