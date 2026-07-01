@@ -1,7 +1,6 @@
-// Parvati weed Thailand — Full version with size selection, PromptPay QR, cash, crypto
+// Parvati 420 — Premium delivery bot with static menu
 const { Telegraf, Markup } = require('telegraf');
 const { categories, products, getSiblingSizes, isSizeVariant, getGroupName } = require('./products');
-const QRCode = require('qrcode');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ADMIN_ID = Number(process.env.ADMIN_ID || '237228075');
@@ -26,25 +25,15 @@ function t(chatId, en, ru) {
   return lang === 'ru' ? ru : en;
 }
 
-// Build a clean cart text
-function buildCartText(chatId) {
-  const cart = userState[chatId]?.cart || [];
-  if (cart.length === 0) return null;
-  let text = t(chatId, '🛒 *Your Cart:*\n\n', '🛒 *Ваша корзина:*\n\n');
-  let total = 0;
-  (cart || []).forEach(item => {
-    const p = products.find(pr => pr.id === item.id);
-    if (p) {
-      const itemTotal = p.price * item.qty;
-      total += itemTotal;
-      text += `• ${p.name_en} × ${item.qty} = ${itemTotal} THB\n`;
-      text += `  _${p.desc_en.substring(0, 60)}_\n\n`;
-    }
-  });
-  text += `💰 *Total: ${total} THB*`;
-  return { text, total };
+// ===== STATIC REPLY KEYBOARD (always visible) =====
+function staticKeyboard(chatId) {
+  return Markup.keyboard([
+    [t(chatId, '🛍️ Shop', '🛍️ Магазин'), t(chatId, '🛒 Cart', '🛒 Корзина')],
+    [t(chatId, '🌍 Language', '🌍 Язык'), t(chatId, '❓ Help', '❓ Помощь')]
+  ]).resize().persistent();
 }
 
+// Main menu inline (for welcome/back)
 function mainMenu(chatId) {
   return {
     reply_markup: {
@@ -60,13 +49,68 @@ function mainMenu(chatId) {
 // ===================== BOT =====================
 const bot = new Telegraf(BOT_TOKEN);
 
-// ---------- START ----------
-bot.start(async (ctx) => {
+// ---------- TEXT HANDLERS (for static keyboard) ----------
+bot.hears(['🛍️ Shop', '🛍️ Магазин'], async (ctx) => {
+  const chatId = ctx.chat.id;
+  await showCategories(chatId, ctx);
+});
+
+bot.hears(['🛒 Cart', '🛒 Корзина'], async (ctx) => {
+  const chatId = ctx.chat.id;
+  await showCartInline(chatId, ctx, false);
+});
+
+bot.hears(['🌍 Language', '🌍 Язык'], async (ctx) => {
   const buttons = [
     [Markup.button.callback('🇬🇧 English', 'lang_en')],
     [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
   ];
-  await ctx.reply('🌿 Welcome to Parvati weed Thailand!\nChoose your language / Выберите язык:', {
+  await ctx.reply('Choose your language / Выберите язык:', {
+    reply_markup: { inline_keyboard: buttons },
+    ...staticKeyboard(ctx.chat.id)
+  });
+});
+
+bot.hears(['❓ Help', '❓ Помощь'], async (ctx) => {
+  const chatId = ctx.chat.id;
+  await ctx.reply(
+    t(chatId,
+      '🌿 *Parvati 420 — Help*\n\n' +
+      '• Browse categories and products\n' +
+      '• Add items to cart with /add\n' +
+      '• Choose delivery region\n' +
+      '• Pay via PromptPay, Cash, or Crypto\n\n' +
+      'Questions? Contact @dr_Andromeda',
+      '🌿 *Parvati 420 — Помощь*\n\n' +
+      '• Листайте категории и товары\n' +
+      '• Добавляйте в корзину\n' +
+      '• Выбирайте регион доставки\n' +
+      '• Оплата: PromptPay / Наличные / Крипта\n\n' +
+      'Вопросы? @dr_Andromeda'
+    ),
+    { parse_mode: 'Markdown', ...staticKeyboard(chatId) }
+  );
+});
+
+async function showCategories(chatId, ctx) {
+  const buttons = categories.map(cat => [
+    Markup.button.callback(cat.name_en, `cat_${cat.id}`)
+  ]);
+  buttons.push([Markup.button.callback(t(chatId, '🔙 Main Menu', '🔙 Главное меню'), 'back_main')]);
+  await ctx.reply(
+    t(chatId, '🌿 *Choose a category:*', '🌿 *Выберите категорию:*'),
+    { reply_markup: { inline_keyboard: buttons }, parse_mode: 'Markdown', ...staticKeyboard(chatId) }
+  );
+}
+
+// ---------- START ----------
+bot.start(async (ctx) => {
+  const chatId = ctx.chat.id;
+  const buttons = [
+    [Markup.button.callback('🇬🇧 English', 'lang_en')],
+    [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
+  ];
+  await ctx.reply('🌿 Welcome to Parvati 420!\nChoose your language / Выберите язык:', {
     reply_markup: { inline_keyboard: buttons }
   });
 });
@@ -75,13 +119,19 @@ bot.start(async (ctx) => {
 bot.action('lang_en', async (ctx) => {
   const chatId = ctx.chat.id;
   userState[chatId] = { lang: 'en', cart: [] };
-  await ctx.editMessageText('🌿 Welcome to Parvati weed Thailand!', mainMenu(chatId));
+  await ctx.editMessageText('🌿 Welcome to Parvati 420!', mainMenu(chatId));
+  try {
+    await ctx.reply('✅ Menu is always at the bottom!', staticKeyboard(chatId));
+  } catch(e) {}
 });
 
 bot.action('lang_ru', async (ctx) => {
   const chatId = ctx.chat.id;
   userState[chatId] = { lang: 'ru', cart: [] };
-  await ctx.editMessageText('🌿 Добро пожаловать в Parvati weed Thailand!', mainMenu(chatId));
+  await ctx.editMessageText('🌿 Добро пожаловать в Parvati 420!', mainMenu(chatId));
+  try {
+    await ctx.reply('✅ Меню всегда внизу!', staticKeyboard(chatId));
+  } catch(e) {}
 });
 
 // ---------- LANGUAGE SWITCH ----------
@@ -95,7 +145,7 @@ bot.action('change_lang', async (ctx) => {
   });
 });
 
-// ---------- SHOP - CATEGORIES ----------
+// ---------- SHOP - CATEGORIES (inline) ----------
 bot.action('shop', async (ctx) => {
   const chatId = ctx.chat.id;
   const buttons = categories.map(cat => [
@@ -113,8 +163,6 @@ categories.forEach(cat => {
   bot.action(`cat_${cat.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
     const catProducts = products.filter(p => p.cat === cat.id);
-
-    // Group size variants under a single row
     const seenGroups = new Set();
     const buttons = [];
 
@@ -123,7 +171,6 @@ categories.forEach(cat => {
         const groupName = getGroupName(p.id);
         if (!groupName || seenGroups.has(groupName)) return;
         seenGroups.add(groupName);
-        // Find cheapest size for display price
         const sizes = getSiblingSizes(p.id);
         const minPrice = Math.min(...sizes.map(s => s.price));
         const cleanName = groupName.replace(/[^a-zA-Z0-9]/g, '');
@@ -146,7 +193,6 @@ categories.forEach(cat => {
 });
 
 // ---------- SIZE GROUP MENU ----------
-// We'll register dynamically for all unique group names
 const allGroupNames = new Set();
 products.forEach(p => {
   if (isSizeVariant(p.id)) {
@@ -160,7 +206,6 @@ allGroupNames.forEach(groupName => {
   const cbData = `g_${cleanName}`;
   bot.action(cbData, async (ctx) => {
     const chatId = ctx.chat.id;
-    // Find the sizes for this group
     const exampleProduct = products.find(p => isSizeVariant(p.id) && getGroupName(p.id) === groupName);
     if (!exampleProduct) return;
     const sizes = getSiblingSizes(exampleProduct.id);
@@ -196,9 +241,7 @@ products.forEach(p => {
     await ctx.answerCbQuery(
       t(chatId, `✅ Added ${p.name_en}`, `✅ Добавлено ${p.name_ru}`)
     );
-
-    // Show what's in cart now as confirmation
-    showCartInline(chatId, ctx, true);
+    await showCartInline(chatId, ctx, true);
   });
 });
 
@@ -207,24 +250,23 @@ async function showCartInline(chatId, ctx, isEdit = true) {
   const cart = userState[chatId]?.cart || [];
   if (!cart.length) {
     const text = t(chatId, '🛒 *Your cart is empty*', '🛒 *Ваша корзина пуста*');
+    const opts = { ...mainMenu(chatId), parse_mode: 'Markdown' };
     if (isEdit) {
-      await ctx.editMessageText(text, { ...mainMenu(chatId), parse_mode: 'Markdown' });
+      await ctx.editMessageText(text, opts);
     } else {
-      await ctx.reply(text, { ...mainMenu(chatId), parse_mode: 'Markdown' });
+      await ctx.reply(text, { ...opts, ...staticKeyboard(chatId) });
     }
     return;
   }
 
   let text = t(chatId, '🛒 *Your Cart:*\n\n', '🛒 *Ваша корзина:*\n\n');
   let total = 0;
-  cart.forEach((item, idx) => {
+  cart.forEach(item => {
     const p = products.find(pr => pr.id === item.id);
     if (p) {
       const itemTotal = p.price * item.qty;
       total += itemTotal;
-      text += `${idx + 1}. ${p.name_en} × ${item.qty} = ${itemTotal} THB\n`;
-      text += `   _${p.desc_en.substring(0, 50)}_\n`;
-      text += `   ➖ [Remove one: /rm_${item.id}]\n\n`;
+      text += `• ${p.name_en} × ${item.qty} = ${itemTotal} THB\n`;
     }
   });
   text += `\n💰 *Total: ${total} THB*\n\n`;
@@ -238,16 +280,11 @@ async function showCartInline(chatId, ctx, isEdit = true) {
     Markup.button.callback(t(chatId, '🗑️ Clear Cart', '🗑️ Очистить'), 'clear_cart')
   ]);
 
+  const opts = { reply_markup: { inline_keyboard: regionButtons }, parse_mode: 'Markdown' };
   if (isEdit) {
-    await ctx.editMessageText(text, {
-      reply_markup: { inline_keyboard: regionButtons },
-      parse_mode: 'Markdown'
-    });
+    await ctx.editMessageText(text, opts);
   } else {
-    await ctx.reply(text, {
-      reply_markup: { inline_keyboard: regionButtons },
-      parse_mode: 'Markdown'
-    });
+    await ctx.reply(text, { ...opts, ...staticKeyboard(chatId) });
   }
 }
 
@@ -266,23 +303,7 @@ bot.action('clear_cart', async (ctx) => {
   );
 });
 
-// ---------- REMOVE ONE ITEM (text command) ----------
-bot.hears(/^\/rm_(.+)$/, async (ctx) => {
-  const chatId = ctx.chat.id;
-  const itemId = ctx.match[1];
-  if (!userState[chatId]) return;
-  const cart = userState[chatId].cart || [];
-  const item = cart.find(i => i.id === itemId);
-  if (item) {
-    item.qty -= 1;
-    if (item.qty <= 0) {
-      userState[chatId].cart = cart.filter(i => i.id !== itemId);
-    }
-  }
-  await showCartInline(chatId, ctx, false);
-});
-
-// ---------- DELIVERY REGION SELECTION ----------
+// ---------- DELIVERY ----------
 deliveryRegions.forEach(region => {
   bot.action(`delivery_${region.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
@@ -296,16 +317,8 @@ deliveryRegions.forEach(region => {
     const finalTotal = subtotal + region.price;
 
     const text = t(chatId,
-      `✅ *Order Summary:*\n\n` +
-      `📍 Delivery: ${region.name_en} (${region.price} THB)\n` +
-      `💵 Subtotal: ${subtotal} THB\n` +
-      `💰 *Total: ${finalTotal} THB*\n\n` +
-      `*Choose payment method:*`,
-      `✅ *Итог заказа:*\n\n` +
-      `📍 Доставка: ${region.name_ru} (${region.price} THB)\n` +
-      `💵 Промежуточный итог: ${subtotal} THB\n` +
-      `💰 *Общая сумма: ${finalTotal} THB*\n\n` +
-      `*Выберите способ оплаты:*`
+      `✅ *Order Summary:*\n\n📍 Delivery: ${region.name_en} (${region.price} THB)\n💵 Subtotal: ${subtotal} THB\n💰 *Total: ${finalTotal} THB*\n\n*Choose payment method:*`,
+      `✅ *Итог заказа:*\n\n📍 Доставка: ${region.name_ru} (${region.price} THB)\n💵 Промежуточный итог: ${subtotal} THB\n💰 *Общая сумма: ${finalTotal} THB*\n\n*Выберите способ оплаты:*`
     );
 
     await ctx.editMessageText(text, {
@@ -322,7 +335,7 @@ deliveryRegions.forEach(region => {
   });
 });
 
-// ---------- PAYMENT: PROMPTPAY QR ----------
+// ---------- PROMPTPAY ----------
 bot.action('pay_promptpay', async (ctx) => {
   const chatId = ctx.chat.id;
   const cart = userState[chatId]?.cart || [];
@@ -333,47 +346,42 @@ bot.action('pay_promptpay', async (ctx) => {
     if (p) subtotal += p.price * item.qty;
   });
   const total = subtotal + region.price;
-
   const qrUrl = `https://promptpay.io/${PROMPTPAY_PHONE}/${total}.png`;
 
-  try {
-    // Send QR as photo
-    await ctx.editMessageText(
-      t(chatId,
-        `💳 *PromptPay Payment*\n\nAmount: ${total} THB\nScan the QR code below with your banking app.\n\n_After payment, click Confirm below._`,
-        `💳 *Оплата PromptPay*\n\nСумма: ${total} THB\nОтсканируйте QR-код ниже через банковское приложение.\n\n_После оплаты нажмите Подтвердить._`
-      ),
-      { parse_mode: 'Markdown' }
-    );
+  await ctx.editMessageText(
+    t(chatId,
+      `💳 *PromptPay*\nAmount: ${total} THB\nPay to: ${PROMPTPAY_PHONE}`,
+      `💳 *PromptPay*\nСумма: ${total} THB\nТелефон: ${PROMPTPAY_PHONE}`
+    ),
+    { parse_mode: 'Markdown' }
+  );
 
+  try {
     await ctx.replyWithPhoto(
       { url: qrUrl },
       {
         caption: t(chatId,
-          `🧾 *Parvati Weed — PromptPay*\nAmount: ${total} THB\nPhone: ${PROMPTPAY_PHONE}`,
-          `🧾 *Parvati Weed — PromptPay*\nСумма: ${total} THB\nТелефон: ${PROMPTPAY_PHONE}`
+          `Scan QR or send to ${PROMPTPAY_PHONE}`,
+          `Сканируйте QR или отправьте на ${PROMPTPAY_PHONE}`
         ),
-        parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [Markup.button.callback(t(chatId, '✅ I Paid — Confirm Order', '✅ Я Оплатил — Подтвердить'), 'confirm_order')],
+            [Markup.button.callback(t(chatId, '✅ I Paid', '✅ Я Оплатил'), 'confirm_order')],
             [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
           ]
         }
       }
     );
   } catch (err) {
-    // Fallback: send link to QR
     await ctx.reply(
       t(chatId,
-        `💳 *PromptPay Payment*\n\nAmount: ${total} THB\nScan this QR:\n${qrUrl}\n\nOr use phone: ${PROMPTPAY_PHONE}\n\n_After payment, click Confirm._`,
-        `💳 *Оплата PromptPay*\n\nСумма: ${total} THB\nСканируйте QR:\n${qrUrl}\n\nИли по телефону: ${PROMPTPAY_PHONE}\n\n_После оплаты нажмите Подтвердить._`
+        `QR: ${qrUrl}\nOr send to ${PROMPTPAY_PHONE}\n\nThen confirm.`,
+        `QR: ${qrUrl}\nИли на ${PROMPTPAY_PHONE}\n\nПодтвердите.`
       ),
       {
-        parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [Markup.button.callback(t(chatId, '✅ I Paid — Confirm', '✅ Я Оплатил'), 'confirm_order')],
+            [Markup.button.callback(t(chatId, '✅ I Paid', '✅ Я Оплатил'), 'confirm_order')],
             [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
           ]
         }
@@ -382,59 +390,44 @@ bot.action('pay_promptpay', async (ctx) => {
   }
 });
 
-// ---------- PAYMENT: CASH ----------
+// ---------- CASH ----------
 bot.action('pay_cash', async (ctx) => {
   const chatId = ctx.chat.id;
-  const text = t(chatId,
-    `💵 *Cash Payment*\n\nYou selected **Cash to courier**.\n\nPay in cash when your order arrives.\n\nClick Confirm to place the order.`,
-    `💵 *Наличные*\n\nВы выбрали **Наличные курьеру**.\n\nОплатите наличными при получении.\n\nНажмите Подтвердить для оформления заказа.`
-  );
-  await ctx.editMessageText(text, {
-    parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [Markup.button.callback(t(chatId, '✅ Confirm Order', '✅ Подтвердить заказ'), 'confirm_order')],
-        [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
-      ]
+  await ctx.editMessageText(
+    t(chatId,
+      `💵 *Cash*\nPay when order arrives.`,
+      `💵 *Наличные*\nОплата при получении.`
+    ),
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [Markup.button.callback(t(chatId, '✅ Confirm', '✅ Подтвердить'), 'confirm_order')],
+          [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
+        ]
+      }
     }
-  });
+  );
 });
 
-// ---------- PAYMENT: CRYPTO ----------
+// ---------- CRYPTO ----------
 bot.action('pay_crypto', async (ctx) => {
   const chatId = ctx.chat.id;
-  const cart = userState[chatId]?.cart || [];
-  const region = userState[chatId]?.deliveryRegion || deliveryRegions[0];
-  let subtotal = 0;
-  cart.forEach(item => {
-    const p = products.find(pr => pr.id === item.id);
-    if (p) subtotal += p.price * item.qty;
-  });
-  const total = subtotal + region.price;
-
-  const text = t(chatId,
-    `₿ *Crypto Payment*\n\n` +
-    `Amount: ${total} THB\n\n` +
-    `Send to one of these addresses:\n\n` +
-    `*USDT (ERC20):*\n\`${USDT_ADDRESS}\`\n\n` +
-    `*BTC:*\n\`${BTC_ADDRESS}\`\n\n` +
-    `_After sending, click Confirm and we'll verify._`,
-    `₿ *Оплата Криптой*\n\n` +
-    `Сумма: ${total} THB\n\n` +
-    `Отправьте на один из адресов:\n\n` +
-    `*USDT (ERC20):*\n\`${USDT_ADDRESS}\`\n\n` +
-    `*BTC:*\n\`${BTC_ADDRESS}\`\n\n` +
-    `_После отправки нажмите Подтвердить, мы проверим._`
-  );
-  await ctx.editMessageText(text, {
-    parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [Markup.button.callback(t(chatId, '✅ Sent — Confirm', '✅ Отправил — Подтвердить'), 'confirm_order')],
-        [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
-      ]
+  await ctx.editMessageText(
+    t(chatId,
+      `₿ *Crypto*\n\nUSDT (ERC20):\n\`${USDT_ADDRESS}\`\n\nBTC:\n\`${BTC_ADDRESS}\``,
+      `₿ *Крипта*\n\nUSDT (ERC20):\n\`${USDT_ADDRESS}\`\n\nBTC:\n\`${BTC_ADDRESS}\``
+    ),
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [Markup.button.callback(t(chatId, '✅ Sent', '✅ Отправил'), 'confirm_order')],
+          [Markup.button.callback(t(chatId, '❌ Cancel', '❌ Отмена'), 'back_main')]
+        ]
+      }
     }
-  });
+  );
 });
 
 // ---------- CONFIRM ORDER ----------
@@ -444,8 +437,7 @@ bot.action('confirm_order', async (ctx) => {
   const cart = state?.cart || [];
   const region = state?.deliveryRegion || deliveryRegions[0];
 
-  // Build order for admin
-  let orderText = `🛒 *New Order — Parvati Weed Thailand*\n\n`;
+  let orderText = `🛒 *New Order — Parvati 420*\n\n`;
   let total = 0;
   cart.forEach(item => {
     const p = products.find(pr => pr.id === item.id);
@@ -455,33 +447,29 @@ bot.action('confirm_order', async (ctx) => {
       orderText += `• ${p.name_en} × ${item.qty} = ${itemTotal} THB\n`;
     }
   });
-  orderText += `\n📍 Delivery: ${region.name_en} (${region.price} THB)\n`;
-  orderText += `💵 Subtotal: ${total} THB\n`;
+  orderText += `\n📍 ${region.name_en} (${region.price} THB)\n`;
   orderText += `💰 *Total: ${total + region.price} THB*\n\n`;
-  orderText += `👤 User ID: \`${chatId}\`\n`;
-  orderText += `🌐 Language: ${state?.lang || 'en'}`;
+  orderText += `👤 User ID: \`${chatId}\`\n🌐 ${state?.lang || 'en'}`;
 
   try {
     await ctx.telegram.sendMessage(ADMIN_ID, orderText, { parse_mode: 'Markdown' });
-  } catch (adminErr) {
-    console.error('Failed to notify admin:', adminErr.message);
-  }
+  } catch (e) {}
 
-  // Clear cart
   userState[chatId].cart = [];
   delete userState[chatId].deliveryRegion;
 
   const confirmText = t(chatId,
-    `✅ *Order confirmed!* 🎉\n\nWe will contact you via Telegram shortly 📲\n\n` +
-    `Thank you for choosing Parvati weed Thailand 🌿\n\n_Questions? Reply to this bot message._`,
-    `✅ *Заказ подтверждён!* 🎉\n\nМы свяжемся с вами в Telegram 📲\n\n` +
-    `Спасибо за выбор Parvati weed Thailand 🌿\n\n_Вопросы? Ответьте на это сообщение._`
+    `✅ *Order confirmed!* 🎉\nWe'll contact you soon 📲`,
+    `✅ *Заказ подтверждён!* 🎉\nМы свяжемся 📲`
   );
 
   await ctx.editMessageText(confirmText, {
     ...mainMenu(chatId),
     parse_mode: 'Markdown'
   });
+  try {
+    await ctx.reply('✅ Menu is always below 👇', staticKeyboard(chatId));
+  } catch(e) {}
 });
 
 // ---------- NAVIGATION ----------
@@ -493,7 +481,6 @@ bot.action('back_main', async (ctx) => {
   );
 });
 
-// ---------- NOOP (catch-all for unused callbacks) ----------
 bot.action('noop', async (ctx) => {
   await ctx.answerCbQuery();
 });
@@ -501,7 +488,7 @@ bot.action('noop', async (ctx) => {
 // ---------- LAUNCH ----------
 if (BOT_TOKEN) {
   bot.launch();
-  console.log('🤖 Parvati weed Thailand bot running (full version with QR/cash/crypto)');
+  console.log('🤖 Parvati 420 bot running with static menu');
 } else {
   console.log('❌ Set BOT_TOKEN env variable');
 }

@@ -2,27 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v3.1] — 2026-07-01
+## [v4.0] — 2026-07-01
 ### Added
-- 🖼 **Premium AI-generated product photos** (welcome screen)
-- 📸 **Photo support in bot** — welcome message with cannabis image
-- 📊 **Google Sheets integration** — 11 products exported to Spar City Products sheet
-- 🔄 **Keep-alive script** — auto-restart on crash
-- 🗑️ **Legacy files cleaned** — removed bot_v2.js, bot_v3.js
+- ☑️ **Static reply keyboard** — меню всегда внизу (Shop/Cart/Language/Help)
+- 🗂️ **Size variant grouping** — выбор 1г/3г/5г при добавлении flower strains
+- 💳 **PromptPay QR** — генерация QR через promptpay.io
+- 💵 **Cash to courier** — оплата при получении
+- ₿ **Crypto (USDT/BTC)** — адреса кошельков
+- 📍 **4 delivery zones**: Bangkok (100), Phuket (500), Samui (600), Pangyan (700)
+- 🧪 **377 unit tests** — все пройдены
+- 🧹 **Legacy cleanup** — удалены дубли bot_*.js, products_*.js
 
 ### Changed
-- 🔄 **Full rewrite** — clean bot_clean.js (only weed + kratom)
-- 🧭 **Simplified navigation**: Menu → Category → Product → Cart → Order
-- 🏪 **21 premium strains** in 4 categories (Premium Choice 5A+, Best Value 4A, Fresh for Less, Premium Organic)
-- 💰 **Prices from source**: Joint / 1g / 3.5g / 7g / 14g / 28g
-- 🌍 **Bilingual**: English + Русский
-- 🛒 **Cart with inline controls** ➕➖🗑️
-- 💳 **3 payment methods**: PromptPay QR / Cash / Crypto (USDT/BTC)
-- 📍 **4 delivery zones**: Bangkok, Phuket, Samui, Phangan
-- ❓ **FAQ section**
+- 🔄 **Unified codebase**: один bot.js, один products.js
+- 🏷️ **Rebrand to Parvati 420** — нейтральное имя, без weed/cannabis
+- 🖼️ **Premium product descriptions** — эффекты, вкусы, THC%
+- 🐛 `Cannot access 'pName' before initialization` — исправлен
+- 🐛 `reply_markup is not defined` — исправлен
 
-### Fixed
-- 🐛 All known bugs from v2.x (navigation hang, price errors)
+## [v3.1] — 2026-07-01 (deprecated)
 
 ## [v2.0] — 2026-07-01
 ### Added
