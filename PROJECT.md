@@ -1,110 +1,189 @@
-# 🌿 Parvati Weed Bot — Project Tasks & Roadmap
+# 📋 Parvati 420 — Project Overview
 
-**Repository:** https://github.com/DrAndromeda/parvati-weed-delivery-bot  
-**Live Bot:** @Parvati_WeedThiBot  
-**Project Manager:** @karmadharma_bot  
-**Developer:** @karma_chakra_bot  
-**Client/QA:** Kim (@dr_Andromeda)
+## 🎯 Purpose
+Telegram bot for premium herbal delivery in Thailand.
+Rebranded from "Parvati Weed" to "Parvati 420" to avoid Telegram ToS blocks.
 
 ---
 
-## 🚀 PHASE 1: Foundation ✅ (Done)
+## 🤖 Bot Info
 
-| Task | Status | Owner |
-|------|--------|-------|
-| Парсинг товаров с choochoohemp.com | ✅ Done | @karmadharma_bot |
-| Создание репозитория на GitHub | ✅ Done | @karmadharma_bot |
-| Базовая структура бота (категории, товары) | ✅ Done | @karmadharma_bot |
-| Премиум карточки товаров с эмодзи | ✅ Done | @karmadharma_bot |
-| Корзина с инлайн-контролами (+/-/удалить) | ✅ Done | @karmadharma_bot |
-| 3 способа оплаты (QR / Наличные / Крипта) | ✅ Done | @karmadharma_bot |
-| Выбор размера (1g / 3.5g / 7g / 14g / 28g) | ✅ Done | @karmadharma_bot |
-| FAQ секция | ✅ Done | @karmadharma_bot |
-| Тесты (488 проверок, все пройдены) | ✅ Done | @karmadharma_bot |
-| Бот запущен на сервере | ✅ Done | @karmadharma_bot |
+| Field | Value |
+|-------|-------|
+| **Active bot** | @Growclub_bot |
+| **Token** | `8990540112:AAGCrX56CgbsDind9zi6qfnfyxjdbxvBm-w` |
+| **GitHub** | [DrAndromeda/parvati-weed-delivery-bot](https://github.com/DrAndromeda/parvati-weed-delivery-bot) |
+| **Admin ID** | `237228075` (Kim / @dr_Andromeda) |
+| **Platform** | Node.js + Telegraf |
+| **Version** | v4.0 |
+
+> ⚠️ **Token security:** Never post tokens in group chats. Only share via DM.
 
 ---
 
-## 🎯 PHASE 2: Premium Design Polish (Current)
+## 🧠 Architecture
 
-| # | Task | Status | Owner | Deadline |
-|---|------|--------|-------|----------|
-| 2.1 | **Welcome-сообщение** — премиум текст, логотип | 📝 In Progress | @karmadharma_bot | EOD Jul 1 |
-| 2.2 | **Картинки товаров** — AI-генерация или сток | ⏳ Todo | @karma_chakra_bot | Jul 3 |
-| 2.3 | **Категорийные штампы** (Premium Choice / Best Value иконки) | 📝 In Progress | @karmadharma_bot | Jul 2 |
-| 2.4 | **Фирменный стиль** — цвета, шрифты, тональность | ⏳ Todo | @karma_chakra_bot | Jul 3 |
-| 2.5 | **Полноэкранное меню** — редизайн кнопок (не узкое) | ⏳ Todo | @karma_chakra_bot | Jul 2 |
-| 2.6 | **Эмодзи-оформление** всех описаний товаров | ✅ Done | @karmadharma_bot | — |
-| 2.7 | **Градация цен** — вынести Joint/Gram/3.5/7/14/28g | ✅ Done | @karmadharma_bot | — |
+```
+start_bot.js         ← Sets BOT_TOKEN env, requires bot.js
+    ↓
+bot.js               ← Main logic (Telegraf handlers, cart, payments)
+    ↓
+products.js          ← Product catalog, size groups, helpers
+```
 
----
-
-## 🛒 PHASE 3: Shopping Experience
-
-| # | Task | Status | Owner | Deadline |
-|---|------|--------|-------|----------|
-| 3.1 | **Путь клиента** — пройти весь флоу, исправить баги | ⏳ Todo | @karma_chakra_bot | Jul 3 |
-| 3.2 | **Ошибка градации цен** — зависает на выборе сорта | 🐛 Bug | @karma_chakra_bot | ASAP |
-| 3.3 | **Подтверждение заказа** — работает? протестировать | ⏳ Todo | @karma_chakra_bot | Jul 3 |
-| 3.4 | **Уведомление админу** — формат, читаемость | ⏳ Todo | @karma_chakra_bot | Jul 4 |
-| 3.5 | **Сохранение истории заказов** (в БД) | ⏳ Todo | @karma_chakra_bot | Jul 5 |
+**No persistent storage** — uses in-memory `userState` object.
+All conversations reset on restart.
 
 ---
 
-## 💳 PHASE 4: Payments
+## 🛍️ Features
 
-| # | Task | Status | Owner | Deadline |
-|---|------|--------|-------|----------|
-| 4.1 | **PromptPay QR** — интеграция статического/динамического QR | ⏳ Todo | @karma_chakra_bot | Jul 6 |
-| 4.2 | **Крипта (USDT/BTC)** — API NOWPayments или Coinbase | ⏳ Todo | @karma_chakra_bot | Jul 7 |
-| 4.3 | **Наличные курьеру** — поток работает | ✅ Done | @karmadharma_bot | — |
+### Products
+- 5 categories: Kratom, Flower, Edibles, Pre-rolls, Accessories
+- **Size groups** for flower strains (1g/3g/5g) — group variants into one menu entry
+- Each product has: name_en, name_ru, desc_en, desc_ru, price, cat, id, size, effects, thc
+
+### Cart
+- In-memory per-chat cart
+- Add from inline buttons, view from static menu
+- Clear cart button
+- Cart is lost on bot restart
+
+### Delivery Zones
+| Zone | Price (THB) |
+|------|-------:|
+| Bangkok | 100 |
+| Phuket | 500 |
+| Samui | 600 |
+| Pangyan | 700 |
+
+### Payment
+| Method | How it works |
+|--------|-------------|
+| 💳 PromptPay QR | Generates QR via `https://promptpay.io/{phone}/{amount}.png` |
+| 💵 Cash on delivery | Pay courier |
+| ₿ Crypto (USDT/BTC) | Show wallet addresses |
+
+### Language
+- English / Russian — selected at `/start`
+- Remembered per-chat
+
+### Static Keyboard
+Always visible at the bottom:
+```
+🛍️ Shop  |  🛒 Cart
+🌍 Language  |  ❓ Help
+```
 
 ---
 
-## 🧪 PHASE 5: Testing & QA
+## 🚀 Deployment
 
-| # | Task | Status | Owner | Deadline |
-|---|------|--------|-------|----------|
-| 5.1 | **Юнит-тесты** — 488 проверок | ✅ Done | @karmadharma_bot | — |
-| 5.2 | **E2E тестирование** — пройти весь путь клиента | ⏳ Todo | @karma_chakra_bot | Jul 4 |
-| 5.3 | **Нагрузочное тестирование** | ⏳ Todo | @karma_chakra_bot | Jul 5 |
-| 5.4 | **Баг-репорт** — найти и исправить все падения | ⏳ Todo | @karma_chakra_bot | Jul 4 |
-
----
-
-## 📦 PHASE 6: Content & Expansion
-
-| # | Task | Status | Owner | Deadline |
-|---|------|--------|-------|----------|
-| 6.1 | **Все 109 товаров** — добавить полный ассортимент | ⏳ Todo | @karma_chakra_bot | Jul 8 |
-| 6.2 | **Kief/Edibles/Pre-rolls** — добавить если появятся на сайте | ⏳ Todo | @karma_chakra_bot | TBD |
-| 6.3 | **Тайский язык** — добавить третий язык | ⏳ Todo | @karma_chakra_bot | Jul 10 |
-| 6.4 | **Реферальная система** — скидки за приведённых друзей | ⏳ Todo | @karma_chakra_bot | Jul 12 |
-
----
-
-## 🔧 How to Contribute
-
-1. Форкните репозиторий или запросите collaborator доступ
-2. Сделайте изменения в своей ветке
-3. Откройте Pull Request
-4. @karmadharma_bot проверяет и мержит
-
-**Запуск локально:**
+### Local
 ```bash
-git clone https://github.com/DrAndromeda/parvati-weed-delivery-bot
 cd parvati-weed-delivery-bot
 npm install
-BOT_TOKEN=your_token ADMIN_ID=237228075 node bot_v3.js
+echo "BOT_TOKEN=8990540112:AAGCrX56CgbsDind9zi6qfnfyxjdbxvBm-w" > .env
+echo "ADMIN_ID=237228075" >> .env
+node bot.js
 ```
 
-**Запуск тестов:**
+### Production (with pm2)
 ```bash
-node tests.js
+npm install -g pm2
+BOT_TOKEN=... ADMIN_ID=237228075 pm2 start bot.js --name parvati420
+pm2 save
+```
+
+### Using start_bot.js
+```bash
+node start_bot.js
+```
+(Embedded token — for development only, don't commit to git)
+
+---
+
+## 🔧 Config (in bot.js)
+
+```js
+const PROMPTPAY_PHONE = '0812345678';   // ← Replace with real
+const USDT_ADDRESS = '0x1234...';       // ← Replace with real
+const BTC_ADDRESS = 'bc1qxyz...';       // ← Replace with real
 ```
 
 ---
 
-*Last updated: 2026-07-01 18:09 ICT*  
-*Project Manager: @karmadharma_bot*  
-*Developer: @karma_chakra_bot*
+## 🧪 Testing
+
+```bash
+npm test          # Runs 377 tests
+```
+
+Tests cover:
+- Product structure
+- Category integrity
+- Size variants
+- Helper functions
+
+---
+
+## 🐛 Known Issues & Fixes
+
+### ❌ "Cannot access 'pName' before initialization"
+**Cause:** Temporal Dead Zone in old products.js — using variable before `const` declaration.
+**Fix:** v4.0 doesn't use `pName`. Ensure latest code is deployed.
+
+### ❌ "reply_markup is not defined"
+**Cause:** Calling inline button methods in text handler without passing `Markup`.
+**Fix:** v4.0 uses `Markup.keyboard(...)` for static menu and `Markup.button.callback(...)` for inline.
+
+### ❌ "sendPhoto socket hang up"
+**Cause:** QR code URL not reachable or timeout.
+**Fix:** v4.0 has fallback — sends QR link as text if photo fails.
+
+### ❌ "409: Conflict"
+**Cause:** Multiple bot instances with same token.
+**Fix:** Kill old process: `pkill -f "bot.js"`, then start fresh.
+
+### ❌ "403: Bot was blocked by user"
+**Cause:** User blocked the bot.
+**Fix:** Can't do anything — remove user from broadcast lists.
+
+### ❌ "chat not found"
+**Cause:** Bot can't initiate DM to user.
+**Fix:** User must `/start` the bot first. Then bot can reply.
+
+---
+
+## 📜 History (Changelog)
+
+| Version | Date | Key Changes |
+|---------|------|-------------|
+| v4.0 | 2026-07-01 | Static reply keyboard, size groups, PromptPay QR, 377 tests |
+| v3.1 | 2026-07-01 | Premium photos, Google Sheets, keep-alive (deprecated) |
+| v2.0 | 2026-07-01 | Full rewrite: 21 strains, bilingual, cart, payments |
+| v1.0 | Pre-July | Original by @karma_chakra_bot |
+
+---
+
+## 👥 Team
+
+| Role | Person | Handle |
+|------|--------|--------|
+| **Owner** | Kim | @dr_Andromeda |
+| **Developer** | Karma (main) | @karmadharma_bot |
+| **Developer** | Karma Chakra | @karma_chakra_bot |
+
+---
+
+## 🔜 Roadmap
+
+- [ ] **Real PromptPay number** — replace placeholder
+- [ ] **Real USDT/BTC addresses** — replace placeholders
+- [ ] **Product images** — add to welcome screen
+- [ ] **Persistent storage** — SQLite or PostgreSQL
+- [ ] **Promo codes**
+- [ ] **Thai language**
+- [ ] **Testimonials / reviews**
+- [ ] **Production deploy** (pm2 or VPS)
+- [ ] **Admin panel** — web dashboard
