@@ -2,9 +2,12 @@
 // 🌿 Parvati Weed Bot — Чистая версия. Только трава + кратом.
 const { Telegraf, Markup } = require('telegraf');
 const { products, categories } = require('./products_spar_city');
+const path = require('path');
+const fs = require('fs');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ADMIN_ID = Number(process.env.ADMIN_ID || '237228075');
+const PHOTO_DIR = __dirname;
 
 // ─── Данные ───
 const DELIVERY = [
@@ -79,17 +82,26 @@ function menu(chatId) {
 const bot = new Telegraf(BOT_TOKEN);
 
 bot.start(async (ctx) => {
-  const msg = t(ctx.chat.id,
-    '🌿 *Welcome to Parvati Weed Thailand*\nPremium cannabis & kratom delivery 🚀\n\n🇬🇧 English / 🇷🇺 Русский',
-    '🌿 *Добро пожаловать в Parvati Weed Thailand*\nПремиум доставка травы и кратома 🚀\n\n🇬🇧 English / 🇷🇺 Русский'
+  const buttons = [
+    [Markup.button.callback('🇬🇧 English', 'lang_en')],
+    [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
+  ];
+  const caption = t(ctx.chat.id,
+    '🌿 *Welcome to Parvati Weed Thailand*\nPremium cannabis & kratom delivery 🚀\n🇬🇧 English / 🇷🇺 Русский',
+    '🌿 *Добро пожаловать в Parvati Weed Thailand*\nПремиум доставка травы и кратома 🚀\n🇬🇧 English / 🇷🇺 Русский'
   );
-  await ctx.reply(msg, {
-    parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: [
-      [Markup.button.callback('🇬🇧 English', 'lang_en')],
-      [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
-    ]}
-  });
+  const defImg = path.join(__dirname, 'product_default.png');
+  if (fs.existsSync(defImg)) {
+    await ctx.replyWithPhoto({ source: defImg }, {
+      caption, parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: buttons }
+    });
+  } else {
+    await ctx.reply(caption, {
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: buttons }
+    });
+  }
 });
 
 bot.action('lang_en', async (ctx) => {
