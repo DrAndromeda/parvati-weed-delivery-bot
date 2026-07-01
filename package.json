@@ -4,7 +4,7 @@
   "description": "Premium cannabis delivery Telegram bot for Thailand — PromptPay, Cash, Crypto payments, size variants, multilingual",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
+    "start": "node start_bot.js",
     "dev": "nodemon bot.js",
     "test": "node test.js"
   },
