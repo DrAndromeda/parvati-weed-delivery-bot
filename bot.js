@@ -1,30 +1,35 @@
-// 🌿 Parvati Bot — Premium Botanical Collection
-// Age-verified, Telegram-safe, discreet delivery
-// v5.0 — @karmadharma_bot
+// 🌿 Parvati Premium Botanic — v5.5 Premium Edition
+// Telegram-safe | Age 18+ | Premium delivery | Discreet
+// @karmadharma_bot
 
 const { Telegraf, Markup } = require('telegraf');
 const { products, categories } = require('./products');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ADMIN_ID = Number(process.env.ADMIN_ID || '237228075');
 
-// ─── CONFIG ───
+// ─── PREMIUM CONFIG ───
+const CONFIG = {
+  botName: 'Parvati Premium Botanic',
+  tagline: { en: 'Premium Botanical Collection', ru: 'Премиум Ботаническая Коллекция' },
+  phone: '0812345678',
+  currency: 'THB',
+  loyaltyBonus: 0.05,         // 5% cashback
+  welcomeImage: 'product_premium.png',
+  defaultImage: 'product_default.png',
+};
+
 const DELIVERY = [
-  { id: 'bangkok',  en: '📍 Bangkok',   ru: '📍 Бангкок',   price: 100 },
-  { id: 'phuket',   en: '📍 Phuket',    ru: '📍 Пхукет',    price: 300 },
-  { id: 'samui',    en: '📍 Koh Samui', ru: '📍 Самуи',     price: 400 },
-  { id: 'phangan',  en: '📍 Koh Phangan',ru: '📍 Панган',    price: 500 },
+  { id: 'bangkok',     en: '📍 Bangkok — Express',      ru: '📍 Бангкок — Экспресс',       price: 100 },
+  { id: 'phuket',      en: '📍 Phuket — Courier',       ru: '📍 Пхукет — Курьер',          price: 300 },
+  { id: 'samui',       en: '📍 Koh Samui — Premium',    ru: '📍 Самуи — Премиум',          price: 400 },
+  { id: 'phangan',     en: '📍 Koh Phangan — Priority', ru: '📍 Панган — Приоритет',       price: 500 },
+  { id: 'other',       en: '📍 Other — Thailand Post',  ru: '📍 Другие — Почта Таиланда',   price: 300 },
 ];
 
-const PAYMENTS = [
-  { id: 'qr',     icon: '🇹🇭', en: 'PromptPay QR',       ru: 'PromptPay QR' },
-  { id: 'cash',   icon: '💵', en: 'Cash to courier',     ru: 'Наличные курьеру' },
-  { id: 'crypto', icon: '₿',  en: 'Crypto USDT/BTC',     ru: 'Крипта USDT/BTC' },
-];
-
-// ─── SIZES ───
 const SIZES = [
   { id:'joint',  label:'🚬 Joint',  wt:1 },
   { id:'gram',   label:'🌱 1g',     wt:1 },
@@ -51,82 +56,86 @@ function getPrice(p, sizeId) {
   return base || Math.round(p.price_gram * s.wt);
 }
 
-function fmtSize(p, sizeId) {
-  return `${SIZES.find(x=>x.id===sizeId).label} — ${getPrice(p,sizeId)} THB`;
-}
-
-// ─── STATE ───
+// ─── USER STATE ───
 const user = {};
-function lang(chatId) { return user[chatId]?.lang || 'en'; }
-function t(chatId, en, ru) { return lang(chatId) === 'en' ? en : ru; }
-function isAdult(chatId) { return user[chatId]?.adult === true; }
+function lang(c) { return user[c]?.lang || 'en'; }
+function t(c, en, ru) { return lang(c) === 'en' ? en : ru; }
+function adult(c) { return user[c]?.adult === true; }
 
-function cartTotal(chatId) {
-  const c = user[chatId]?.cart || [];
-  let sum = 0;
-  c.forEach(i => {
+function cartTotal(c) {
+  return (user[c]?.cart || []).reduce((sum, i) => {
     const p = products.find(x => x.id === i.id);
-    if (p) sum += getPrice(p, i.size) * i.qty;
-  });
-  return sum;
+    if (!p) return sum;
+    return sum + getPrice(p, i.size) * i.qty;
+  }, 0);
 }
 
-function cartText(chatId) {
-  const c = user[chatId]?.cart || [];
-  if (!c.length) return null;
-  let text = t(chatId, '🛒 *Cart*\n\n', '🛒 *Корзина*\n\n');
-  let sum = 0;
-  c.forEach((i,idx) => {
+function loyaltyPoints(c) {
+  return Math.floor(cartTotal(c) * CONFIG.loyaltyBonus);
+}
+
+function cartPreview(c) {
+  const items = user[c]?.cart || [];
+  if (!items.length) return null;
+  let text = '🛒 *PREMIUM CART*\n═══════════════════\n\n';
+  let total = 0;
+  items.forEach((i, idx) => {
     const p = products.find(x => x.id === i.id);
     if (p) {
       const price = getPrice(p, i.size);
-      const itemSum = price * i.qty;
-      sum += itemSum;
-      text += `${idx+1}. ${p.name_en} ×${i.qty} — ${itemSum} THB\n`;
+      const sum = price * i.qty;
+      total += sum;
+      text += `▸ *${p.name_en}* ${SIZES.find(s=>s.id===i.size)?.label||''}\n`;
+      text += `  ×${i.qty} = ${sum.toLocaleString()} ${CONFIG.currency}\n\n`;
     }
   });
-  text += `\n💰 *Total: ${sum} THB*`;
+  text += `═══════════════════\n💰 *Total: ${total.toLocaleString()} ${CONFIG.currency}*\n`;
   return text;
 }
 
-function mainMenuKeyboard(chatId) {
-  const c = user[chatId]?.cart || [];
-  const badge = c.length ? ` (${c.reduce((s,i)=>s+i.qty,0)})` : '';
+// ─── MENU ───
+function premiumMenu(c) {
+  const items = user[c]?.cart || [];
+  const badge = items.length ? ` (${items.reduce((s,i)=>s+i.qty,0)})` : '';
   return {
     reply_markup: {
       inline_keyboard: [
-        [Markup.button.callback('🛍️ Menu / Menu', 'shop')],
-        [Markup.button.callback(`🛒 Cart${badge}`, 'cart'), Markup.button.callback('❓ FAQ', 'faq')],
+        [Markup.button.callback('🛍️ BROWSE COLLECTION', 'shop')],
+        [Markup.button.callback(`🛒 CART${badge}`, 'cart'), Markup.button.callback('✨ FAQ', 'faq')],
         [Markup.button.callback('🌍 EN / RU', 'lang_menu')],
       ]
     }
   };
 }
 
-// ─── BOT SETUP ───
+// ─── IMAGE HELPER ───
+function img(name) {
+  const p = path.join(__dirname, name);
+  return fs.existsSync(p) ? { source: p } : null;
+}
+
+// =====================================================
+//  BOT
+// =====================================================
 const bot = new Telegraf(BOT_TOKEN);
 
-// ========== AGE VERIFICATION ==========
+// ─────── AGE VERIFICATION ───────
 bot.start(async (ctx) => {
   const chatId = ctx.chat.id;
-  
-  const welcomePhoto = path.join(__dirname, 'product_default.png');
-  const caption = 
-    '🌿 *Welcome to Parvati Premium Botanic* 🌿\n\n' +
-    'Premium botanical collections — discreet delivery across Thailand 🇹🇭\n\n' +
-    '⚠️ *Age Verification Required* / *Требуется подтверждение возраста*';
-  
+  const photo = img(CONFIG.welcomeImage);
+  const caption = `🌿 *${CONFIG.botName}* 🌿\n\n━━━━━━━━━━━━━━━━━━━\n*${CONFIG.tagline.en}* / *${CONFIG.tagline.ru}*\n━━━━━━━━━━━━━━━━━━━\n\nDiscreet delivery across Thailand 🇹🇭\n\n⚠️ *Age Verification Required*`;
+
   const buttons = {
     reply_markup: {
       inline_keyboard: [
-        [Markup.button.callback('✅ I am 18+ / Мне есть 18', 'adult_yes')],
+        [Markup.button.callback('✅ I am 18+ / Мне есть 18 ✅', 'adult_yes')],
         [Markup.button.callback('❌ I am under 18 / Мне нет 18', 'adult_no')],
       ]
     }
   };
 
-  if (fs.existsSync(welcomePhoto)) {
-    await ctx.replyWithPhoto({ source: welcomePhoto }, { caption, parse_mode: 'Markdown', ...buttons });
+  if (photo) {
+    await ctx.replyWithPhoto(photo, { caption, parse_mode: 'Markdown', ...buttons });
   } else {
     await ctx.reply(caption, { parse_mode: 'Markdown', ...buttons });
   }
@@ -136,85 +145,61 @@ bot.action('adult_yes', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!user[chatId]) user[chatId] = {};
   user[chatId].adult = true;
-  
-  const langButtons = {
-    reply_markup: {
-      inline_keyboard: [
-        [Markup.button.callback('🇬🇧 English', 'lang_en')],
-        [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
-      ]
-    }
-  };
 
   await ctx.editMessageText(
-    '✅ *Access granted!*\n\nChoose your language:\n\n🇬🇧 English — Shop premium botanicals\n🇷🇺 Русский — Премиум ботаническая коллекция',
-    { parse_mode: 'Markdown', ...langButtons }
+    '✅ *ACCESS GRANTED* ✅\n\n━━━━━━━━━━━━━━━━━━━\nChoose your language:\n\n🇬🇧 English — Premium Botanic Collection\n🇷🇺 Русский — Премиум Ботаническая Коллекция\n━━━━━━━━━━━━━━━━━━━',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [Markup.button.callback('🇬🇧 English', 'lang_en')],
+          [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
+        ]
+      }
+    }
   );
 });
 
 bot.action('adult_no', async (ctx) => {
   await ctx.editMessageText(
-    '⛔ *Access denied.*\n\nThis service is for adults 18+ only.\n\nДоступ запрещён. Только для лиц старше 18 лет.',
+    '⛔ *ACCESS DENIED*\n\nThis service is for adults 18+ only.\nДоступ запрещён. Только для лиц старше 18 лет.',
     { parse_mode: 'Markdown' }
   );
 });
 
-// ========== LANGUAGE ==========
+// ─────── LANGUAGE ───────
+async function showWelcome(chatId, ctx, edit = true) {
+  const photo = img(CONFIG.welcomeImage);
+  const text = `🌿 *${CONFIG.botName}* 🌿\n\n━━━━━━━━━━━━━━━━━━━\n⭐ *PREMIUM BOTANICAL COLLECTION* ⭐\n━━━━━━━━━━━━━━━━━━━\n\n🏆 Curated selection of premium botanicals\n📦 Discreet unmarked packaging\n🚀 Express delivery 1-3 hrs (Bangkok)\n💎 Loyalty rewards for regular clients\n\n*Welcome to the club.* 👇`;
+
+  if (edit) {
+    await ctx.editMessageText(text, { parse_mode: 'Markdown', ...premiumMenu(chatId) });
+  } else if (photo) {
+    await ctx.replyWithPhoto(photo, { caption: text, parse_mode: 'Markdown', ...premiumMenu(chatId) });
+  } else {
+    await ctx.reply(text, { parse_mode: 'Markdown', ...premiumMenu(chatId) });
+  }
+}
+
 bot.action('lang_en', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+  if (!adult(chatId)) return;
   user[chatId] = { ...user[chatId], lang: 'en', cart: user[chatId]?.cart || [] };
-
-  const welcomePhoto = path.join(__dirname, 'product_premium.png');
-  const text = '🌿 *Welcome to Parvati Premium Botanic* 🌿\n\n' +
-    'Premium botanical collections for connoisseurs.\n' +
-    'Curated selection • Discreet packaging • Fast delivery 🚀\n\n' +
-    'Use the menu below to browse 👇';
-
-  if (fs.existsSync(welcomePhoto)) {
-    await ctx.deleteMessage().catch(()=>{});
-    await ctx.replyWithPhoto({ source: welcomePhoto }, {
-      caption: text,
-      parse_mode: 'Markdown',
-      ...mainMenuKeyboard(chatId)
-    });
-  } else {
-    await ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
-      ...mainMenuKeyboard(chatId)
-    });
-  }
+  await showWelcome(chatId, ctx, true);
 });
 
 bot.action('lang_ru', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+  if (!adult(chatId)) return;
   user[chatId] = { ...user[chatId], lang: 'ru', cart: user[chatId]?.cart || [] };
-
-  const welcomePhoto = path.join(__dirname, 'product_premium.png');
-  const text = '🌿 *Добро пожаловать в Parvati Premium Botanic* 🌿\n\n' +
-    'Премиум ботаническая коллекция для ценителей.\n' +
-    'Отборный ассортимент • Дискретная упаковка • Быстрая доставка 🚀\n\n' +
-    'Используйте меню ниже для навигации 👇';
-
-  if (fs.existsSync(welcomePhoto)) {
-    await ctx.deleteMessage().catch(()=>{});
-    await ctx.replyWithPhoto({ source: welcomePhoto }, {
-      caption: text,
-      parse_mode: 'Markdown',
-      ...mainMenuKeyboard(chatId)
-    });
-  } else {
-    await ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
-      ...mainMenuKeyboard(chatId)
-    });
-  }
+  
+  const text = `🌿 *${CONFIG.botName}* 🌿\n\n━━━━━━━━━━━━━━━━━━━\n⭐ *ПРЕМИУМ БОТАНИЧЕСКАЯ КОЛЛЕКЦИЯ* ⭐\n━━━━━━━━━━━━━━━━━━━\n\n🏆 Отборный ассортимент премиум растений\n📦 Дискретная упаковка без маркировки\n🚀 Экспресс доставка 1-3 часа (Бангкок)\n💎 Бонусы лояльности для постоянных\n\n*Добро пожаловать в клуб.* 👇`;
+  
+  await ctx.editMessageText(text, { parse_mode: 'Markdown', ...premiumMenu(chatId) });
 });
 
 bot.action('lang_menu', async (ctx) => {
-  const chatId = ctx.chat.id;
-  await ctx.editMessageText('🌍 *Language / Язык*', {
+  await ctx.editMessageText('🌍 *LANGUAGE / ЯЗЫК*', {
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [
@@ -224,180 +209,199 @@ bot.action('lang_menu', async (ctx) => {
   });
 });
 
-// ========== SHOP / CATEGORIES ==========
+// ─────── SHOP ───────
 bot.action('shop', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+  if (!adult(chatId)) return;
   
-  const btns = categories.map(c => [Markup.button.callback(c.name_en, `cat_${c.id}`)]);
-  btns.push([Markup.button.callback(t(chatId,'🔙 Back','🔙 Назад'), 'back')]);
+  const rows = categories.map(c => [Markup.button.callback(`✦ ${c.name_en}`, `cat_${c.id}`)]);
+  rows.push([Markup.button.callback('🔙 BACK', 'back')]);
+  
   await ctx.editMessageText(
-    t(chatId, '📋 *Categories*:', '📋 *Категории*:'),
-    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: btns } }
+    '🛍️ *PREMIUM COLLECTION*\n━━━━━━━━━━━━━━━━━━━\nChoose category:',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } }
   );
 });
 
 categories.forEach(cat => {
   bot.action(`cat_${cat.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
-    if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+    if (!adult(chatId)) return;
     
     const pp = products.filter(p => p.cat === cat.id);
-    const btns = pp.map(p => [Markup.button.callback(`${p.grade || ''} ${p.name_en}`, `view_${p.id}`)]);
-    btns.push([Markup.button.callback(t(chatId,'🔙 Back','🔙 Назад'), 'shop')]);
-    await ctx.editMessageText(`${cat.name_en}\n${t(chatId,'Select:','Выберите:')}`, {
-      reply_markup: { inline_keyboard: btns }
-    });
+    // Show in groups of 1 per row for premium feel
+    const rows = pp.map(p => [
+      Markup.button.callback(`🏆 ${p.grade || 'PREMIUM'} — ${p.name_en}`, `view_${p.id}`)
+    ]);
+    rows.push([Markup.button.callback('🔙 BACK', 'shop')]);
+    
+    await ctx.editMessageText(
+      `━━ *${cat.name_en}* ━━\n\n${t(chatId, 'Select product:', 'Выберите:')}`,
+      { reply_markup: { inline_keyboard: rows } }
+    );
   });
 });
 
-// ========== PRODUCT VIEW ==========
+// ─────── PRODUCT VIEW ───────
 products.forEach(p => {
   bot.action(`view_${p.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
-    if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+    if (!adult(chatId)) return;
     
     const isEn = lang(chatId) === 'en';
-    let text = `✦ *${p.name_en}* ✦\n🏆 ${p.grade} | 🌸 ${p.type || 'Premium'}\n\n`;
+    let text = `┏━━━━━━━━━━━━━━━━━━━┓\n`;
+    text += `┃  ✦ *${p.name_en}* ✦\n`;
+    text += `┃  🏆 ${p.grade}\n`;
+    text += `┃  🌸 ${p.type || 'Premium'}\n`;
+    text += `┗━━━━━━━━━━━━━━━━━━━┛\n\n`;
     text += isEn ? p.description_en : p.description_ru;
-    text += `\n\n✨ ${(p.effects || []).map(e=>`#${e.replace(/\s/g,'')}`).join(' ')}`;
-    text += `\n\n💰 *Prices:*\n`;
+    text += `\n\n✨ ${(p.effects || []).join(' · ')}`;
+    text += `\n\n📦 Stock: ${p.stock || 'Available'}g\n`;
+    text += `━━━━━━━━━━━━━━━\n💰 *PRICE LIST*\n`;
     SIZES.forEach(s => text += `${fmtSize(p, s.id)}\n`);
-    text += `\n📦 Stock: ${p.stock || 'Available'}g`;
+    text += `━━━━━━━━━━━━━━━`;
 
-    const sb = SIZES.map(s => Markup.button.callback(`${s.label} ${getPrice(p,s.id)} THB`, `add_${p.id}_${s.id}`));
+    const sb = SIZES.map(s => Markup.button.callback(`${s.label} ${getPrice(p,s.id)} ${CONFIG.currency}`, `add_${p.id}_${s.id}`));
     const rows = [];
     for (let i=0; i<sb.length; i+=2) rows.push(sb.slice(i,i+2));
     rows.push([
-      Markup.button.callback(t(chatId,'🔙 Back','🔙 Назад'), `cat_${p.cat}`),
-      Markup.button.callback('🛒 Cart', 'cart'),
+      Markup.button.callback('🔙 BACK', `cat_${p.cat}`),
+      Markup.button.callback('🛒 CART', 'cart'),
     ]);
 
     await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } });
   });
 });
 
-// ========== ADD TO CART ==========
+function fmtSize(p, sizeId) {
+  const s = SIZES.find(x => x.id === sizeId);
+  return `${s.label.padEnd(12)} ${getPrice(p,sizeId).toString().padStart(5)} ${CONFIG.currency}`;
+}
+
+// ─────── ADD TO CART ───────
 products.forEach(p => {
   SIZES.forEach(s => {
     bot.action(`add_${p.id}_${s.id}`, async (ctx) => {
       const chatId = ctx.chat.id;
-      if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
-      if (!user[chatId]) user[chatId] = { adult: true, lang: 'en', cart: [] };
+      if (!adult(chatId)) return;
+      if (!user[chatId]) user[chatId] = { adult:true, lang:'en', cart:[] };
       if (!user[chatId].cart) user[chatId].cart = [];
       
       const existing = user[chatId].cart.find(i => i.id === p.id && i.size === s.id);
       if (existing) existing.qty += 1;
       else user[chatId].cart.push({ id: p.id, size: s.id, qty: 1 });
       
-      await ctx.answerCbQuery(`✅ Added ${SIZES.find(x=>x.id===s.id).label} ${p.name_en}`);
+      await ctx.answerCbQuery(`✅ ${p.name_en} ${SIZES.find(x=>x.id===s.id)?.label||''} added! +${CONFIG.loyaltyBonus*100}% points`);
     });
   });
 });
 
-// ========== CART ==========
+// ─────── CART ───────
 bot.action('cart', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return ctx.answerCbQuery('Age verification required');
+  if (!adult(chatId)) return;
   
-  const text = cartText(chatId);
+  const text = cartPreview(chatId);
   if (!text) {
     await ctx.editMessageText(
-      t(chatId, '🛒 *Cart is empty*', '🛒 *Корзина пуста*'),
-      { parse_mode: 'Markdown', ...mainMenuKeyboard(chatId) }
+      '🛒 *CART IS EMPTY*\n\nBrowse our premium collection 👇',
+      { parse_mode: 'Markdown', ...premiumMenu(chatId) }
     );
     return;
   }
-  
-  const regionButtons = DELIVERY.map(r => [
-    Markup.button.callback(`${r.en} (${r.price} THB)`, `deliver_${r.id}`)
+
+  const bonus = loyaltyPoints(chatId);
+  let fullText = text + `🎁 *Loyalty bonus: +${bonus.toLocaleString()} ${CONFIG.currency}*\n━━━━━━━━━━━━━━━━━━━\n\n📍 Select delivery:`;
+
+  const delButtons = DELIVERY.map(r => [
+    Markup.button.callback(`${r.en} — ${r.price} ${CONFIG.currency}`, `deliver_${r.id}`)
   ]);
-  regionButtons.push([
-    Markup.button.callback(t(chatId, '🛍️ Continue', '🛍️ Продолжить'), 'shop'),
-    Markup.button.callback(t(chatId, '🗑️ Clear', '🗑️ Очистить'), 'clear_cart')
+  delButtons.push([
+    Markup.button.callback('🛍️ CONTINUE', 'shop'),
+    Markup.button.callback('🗑️ CLEAR', 'clear_cart')
   ]);
-  
-  await ctx.editMessageText(text, {
+
+  await ctx.editMessageText(fullText, {
     parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: regionButtons }
+    reply_markup: { inline_keyboard: delButtons }
   });
 });
 
 bot.action('clear_cart', async (ctx) => {
   const chatId = ctx.chat.id;
   if (user[chatId]) user[chatId].cart = [];
-  await ctx.editMessageText(
-    t(chatId, '🗑️ Cart cleared', '🗑️ Корзина очищена'),
-    { parse_mode: 'Markdown', ...mainMenuKeyboard(chatId) }
-  );
+  await ctx.editMessageText('🗑️ *Cart cleared*', {
+    parse_mode: 'Markdown', ...premiumMenu(chatId)
+  });
 });
 
-// ========== DELIVERY ==========
+// ─────── DELIVERY ───────
 DELIVERY.forEach(r => {
   bot.action(`deliver_${r.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
-    if (!isAdult(chatId)) return;
+    if (!adult(chatId)) return;
     user[chatId].delivery = r;
     
-    const total = cartTotal(chatId);
-    const grandTotal = total + r.price;
+    const sub = cartTotal(chatId);
+    const total = sub + r.price;
+    const bonus = Math.floor(total * CONFIG.loyaltyBonus);
     
-    const text = t(chatId,
-      `✅ *Order Summary*\n📦 Subtotal: ${total} THB\n📍 ${r.en}: +${r.price} THB\n💰 *Total: ${grandTotal} THB*\n\n*Choose payment:*`,
-      `✅ *Итог заказа*\n📦 Сумма: ${total} THB\n📍 ${r.ru}: +${r.price} THB\n💰 *Итого: ${grandTotal} THB*\n\n*Выберите оплату:*`
-    );
-    
+    const text = `━━━━━━━━━━━━━━━━━━━\n✅ *ORDER SUMMARY*\n━━━━━━━━━━━━━━━━━━━\n\n📦 Subtotal: ${sub.toLocaleString()} ${CONFIG.currency}\n📍 ${r.en}: +${r.price} ${CONFIG.currency}\n💰 *TOTAL: ${total.toLocaleString()} ${CONFIG.currency}*\n🎁 +${bonus.toLocaleString()} loyalty points\n━━━━━━━━━━━━━━━━━━━\n\n💳 *Choose payment:*`;
+
     await ctx.editMessageText(text, {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
           [Markup.button.callback('🇹🇭 PromptPay QR', 'pay_qr')],
-          [Markup.button.callback('💵 Cash', 'pay_cash')],
-          [Markup.button.callback('₿ Crypto', 'pay_crypto')],
-          [Markup.button.callback(t(chatId,'❌ Cancel','❌ Отмена'), 'cart')]
+          [Markup.button.callback('💵 Cash to courier', 'pay_cash')],
+          [Markup.button.callback('₿ Crypto USDT/BTC', 'pay_crypto')],
+          [Markup.button.callback('❌ CANCEL', 'cart')]
         ]
       }
     });
   });
 });
 
-// ========== PAYMENT ==========
+// ─────── PAYMENTS ───────
 bot.action('pay_qr', async (ctx) => {
   const chatId = ctx.chat.id;
-  const total = cartTotal(chatId) + (user[chatId]?.delivery?.price || 100);
-  const phone = '0812345678';
-  const qrUrl = `https://promptpay.io/${phone}/${total}.png`;
-  
+  const sub = cartTotal(chatId);
+  const total = sub + (user[chatId]?.delivery?.price || 100);
+  const qrUrl = `https://promptpay.io/${CONFIG.phone}/${total}.png`;
+
   await ctx.editMessageText(
     t(chatId,
-      `💳 *PromptPay*\nAmount: ${total} THB\nScan QR below:`,
-      `💳 *PromptPay*\nСумма: ${total} THB\nQR код ниже:`
+      `💳 *PromptPay QR*\nAmount: ${total.toLocaleString()} THB`,
+      `💳 *PromptPay QR*\nСумма: ${total.toLocaleString()} THB`
     ),
     { parse_mode: 'Markdown' }
   );
-  
+
   try {
     await ctx.replyWithPhoto({ url: qrUrl }, {
       caption: t(chatId,
-        `Pay ${total} THB via PromptPay\nThen tap ✅`,
-        `Оплатите ${total} THB через PromptPay\nЗатем нажмите ✅`
+        `📱 Scan QR to pay ${total.toLocaleString()} THB\nThen tap ✅ CONFIRM`,
+        `📱 Сканируйте QR для оплаты ${total.toLocaleString()} THB\nЗатем нажмите ✅ ПОДТВЕРДИТЬ`
       ),
       reply_markup: {
         inline_keyboard: [
-          [Markup.button.callback('✅ I Paid / Оплатил', 'confirm')],
-          [Markup.button.callback('❌ Cancel', 'back')]
+          [Markup.button.callback('✅ CONFIRM / ПОДТВЕРДИТЬ', 'confirm')],
+          [Markup.button.callback('❌ CANCEL', 'back')]
         ]
       }
     });
   } catch(e) {
-    await ctx.reply(`QR: ${qrUrl}\n\n` + t(chatId,'Confirm when paid','Подтвердите оплату'), {
-      reply_markup: {
-        inline_keyboard: [
-          [Markup.button.callback('✅ I Paid', 'confirm')],
-          [Markup.button.callback('❌ Cancel', 'back')]
-        ]
+    await ctx.reply(
+      `QR: ${qrUrl}\n${t(chatId,'Then confirm:','Затем подтвердите:')}`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [Markup.button.callback('✅ CONFIRM', 'confirm')],
+            [Markup.button.callback('❌ CANCEL', 'back')]
+          ]
+        }
       }
-    });
+    );
   }
 });
 
@@ -405,15 +409,15 @@ bot.action('pay_cash', async (ctx) => {
   const chatId = ctx.chat.id;
   await ctx.editMessageText(
     t(chatId,
-      '💵 *Cash to courier*\nPay when order arrives.',
-      '💵 *Наличные курьеру*\nОплата при получении.'
+      '💵 *CASH TO COURIER*\n\nPay in cash when order arrives.\nNo prepayment needed.',
+      '💵 *НАЛИЧНЫЕ КУРЬЕРУ*\n\nОплата наличными при получении.\nБез предоплаты.'
     ),
     {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
-          [Markup.button.callback('✅ Confirm', 'confirm')],
-          [Markup.button.callback('❌ Cancel', 'back')]
+          [Markup.button.callback('✅ CONFIRM', 'confirm')],
+          [Markup.button.callback('❌ CANCEL', 'back')]
         ]
       }
     }
@@ -424,115 +428,118 @@ bot.action('pay_crypto', async (ctx) => {
   const chatId = ctx.chat.id;
   await ctx.editMessageText(
     t(chatId,
-      '₿ *Crypto*\n\nUSDT (ERC20):\n`0x1234567890abcdef1234567890abcdef12345678`\n\nBTC:\n`bc1qxyz...`',
-      '₿ *Крипта*\n\nUSDT (ERC20):\n`0x1234567890abcdef1234567890abcdef12345678`\n\nBTC:\n`bc1qxyz...`'
+      '₿ *CRYPTO PAYMENT*\n\nUSDT (ERC20):\n`0x1234567890abcdef1234567890abcdef12345678`\n\nBTC:\n`bc1qxyz...`\n\nSend exact amount and tap confirm.',
+      '₿ *КРИПТА*\n\nUSDT (ERC20):\n`0x1234567890abcdef1234567890abcdef12345678`\n\nBTC:\n`bc1qxyz...`\n\nОтправьте точную сумму и подтвердите.'
     ),
     {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
-          [Markup.button.callback('✅ Sent', 'confirm')],
-          [Markup.button.callback('❌ Cancel', 'back')]
+          [Markup.button.callback('✅ CONFIRM', 'confirm')],
+          [Markup.button.callback('❌ CANCEL', 'back')]
         ]
       }
     }
   );
 });
 
-// ========== CONFIRM ORDER ==========
+// ─────── CONFIRM ORDER ───────
 bot.action('confirm', async (ctx) => {
   const chatId = ctx.chat.id;
   const state = user[chatId];
   const c = state?.cart || [];
   const r = state?.delivery || DELIVERY[0];
-  
-  let order = `🛒 *New Order — Parvati*\n\n`;
+
+  let order = `🛒 *NEW PREMIUM ORDER*\n━━━━━━━━━━━━━━━━━━━\n\n`;
   let total = 0;
   c.forEach(i => {
     const p = products.find(x => x.id === i.id);
     if (p) {
       const price = getPrice(p, i.size);
-      const itemSum = price * i.qty;
-      total += itemSum;
-      order += `• ${p.name_en} ${SIZES.find(s=>s.id===i.size)?.label||''} ×${i.qty} = ${itemSum} THB\n`;
+      const sum = price * i.qty;
+      total += sum;
+      order += `▸ ${p.name_en} ${SIZES.find(s=>s.id===i.size)?.label||''} ×${i.qty} = ${sum.toLocaleString()} THB\n`;
     }
   });
-  order += `\n📍 ${r.en} (+${r.price} THB)\n💰 *Total: ${total + r.price} THB*\n👤 User: \`${chatId}\`\n🌐 ${state?.lang||'en'}`;
-  
+  order += `\n📍 ${r.en} (+${r.price} THB)\n💰 *GRAND TOTAL: ${(total + r.price).toLocaleString()} THB*`;
+  order += `\n👤 User: \`${chatId}\`\n🌐 ${state?.lang||'en'}`;
+
   try { await ctx.telegram.sendMessage(ADMIN_ID, order, { parse_mode: 'Markdown' }); } catch(e) {}
-  
+
   user[chatId].cart = [];
   delete user[chatId].delivery;
-  
-  const confirmText = t(chatId,
-    '✅ *Order confirmed!* 🎉\nWe\'ll contact you shortly 📲\n\nThank you for choosing Parvati Premium Botanic!',
-    '✅ *Заказ подтверждён!* 🎉\nМы свяжемся с вами 📲\n\nСпасибо за выбор Parvati Premium Botanic!'
-  );
-  
-  await ctx.editMessageText(confirmText, {
-    parse_mode: 'Markdown',
-    ...mainMenuKeyboard(chatId)
+
+  const confirm = `✅ *ORDER CONFIRMED* ✅\n\n━━━━━━━━━━━━━━━━━━━\n🎉 Thank you for choosing *${CONFIG.botName}*!\n\n📲 We will contact you shortly.\n🌿 Enjoy your premium experience.\n━━━━━━━━━━━━━━━━━━━\n\n🎁 *Loyalty points accrued: ${loyaltyPoints(chatId)} ${CONFIG.currency}*`;
+
+  await ctx.editMessageText(confirm, {
+    parse_mode: 'Markdown', ...premiumMenu(chatId)
   });
 });
 
-// ========== FAQ ==========
+// ─────── FAQ ───────
 bot.action('faq', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return;
+  if (!adult(chatId)) return;
+
   await ctx.editMessageText(
     t(chatId,
-      '❓ *FAQ*\n\n' +
-      '🕐 *Hours:* Mon-Sun 10:00-22:00\n' +
-      '🚚 *Delivery:* 1-3 hours (Bangkok), next day (other regions)\n' +
-      '💳 *Payment:* PromptPay / Cash / Crypto\n' +
-      '📦 *Packaging:* Discreet, unmarked\n' +
-      '🌿 *Quality:* Premium selection, curated weekly\n\n' +
-      'Questions? @dr_Andromeda',
-      '❓ *FAQ*\n\n' +
-      '🕐 *Часы:* Пн-Вс 10:00-22:00\n' +
-      '🚚 *Доставка:* 1-3 часа (Бангкок), на след. день (регионы)\n' +
-      '💳 *Оплата:* PromptPay / Наличные / Крипта\n' +
-      '📦 *Упаковка:* Дискретная, без маркировки\n' +
-      '🌿 *Качество:* Премиум отбор, еженедельное обновление\n\n' +
-      'Вопросы? @dr_Andromeda'
+      `✨ *${CONFIG.botName} — FAQ* ✨\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n` +
+      `🕐 *Hours:* Mon-Sun 10:00-22:00\n` +
+      `🚀 *Delivery:* 1-3 hrs (Bangkok), next day (other)\n` +
+      `💳 *Payment:* PromptPay • Cash • Crypto\n` +
+      `📦 *Packaging:* Discreet, unmarked\n` +
+      `🌿 *Quality:* Premium selection, curated weekly\n` +
+      `🎁 *Loyalty:* 5% cashback on every order\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Questions? @dr_Andromeda`,
+      `✨ *${CONFIG.botName} — FAQ* ✨\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n` +
+      `🕐 *Часы:* Пн-Вс 10:00-22:00\n` +
+      `🚀 *Доставка:* 1-3 часа (Бангкок), на след. день (регионы)\n` +
+      `💳 *Оплата:* PromptPay • Наличные • Крипта\n` +
+      `📦 *Упаковка:* Дискретная, без маркировки\n` +
+      `🌿 *Качество:* Премиум отбор, еженедельно\n` +
+      `🎁 *Лояльность:* 5% кэшбэк с каждого заказа\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Вопросы? @dr_Andromeda`
     ),
-    { parse_mode: 'Markdown', ...mainMenuKeyboard(chatId) }
+    { parse_mode: 'Markdown', ...premiumMenu(chatId) }
   );
 });
 
-// ========== NAVIGATION ==========
+// ─────── NAVIGATION ───────
 bot.action('back', async (ctx) => {
   const chatId = ctx.chat.id;
   await ctx.editMessageText(
     t(chatId, '🌿 *Main Menu*', '🌿 *Главное меню*'),
-    { parse_mode: 'Markdown', ...mainMenuKeyboard(chatId) }
+    { parse_mode: 'Markdown', ...premiumMenu(chatId) }
   );
 });
 
 bot.action('noop', async (ctx) => ctx.answerCbQuery());
 
-// ========== HELP TEXT ==========
-bot.hears(/^(❓ Help|❓ Помощь|/help)$/, async (ctx) => {
+// ─────── TEXT COMMANDS ───────
+bot.hears(/^\/help$/i, async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!isAdult(chatId)) return ctx.reply('Please verify age via /start');
+  if (!adult(chatId)) return ctx.reply('Please /start and verify age');
   await ctx.reply(
     t(chatId,
-      'Welcome! Browse Menu → add to cart → choose delivery → pay.\n\nQuestions? @dr_Andromeda',
-      'Листайте Меню → добавляйте в корзину → выберите доставку → оплата.\n\nВопросы? @dr_Andromeda'
+      'Browse → Add to cart → Delivery → Pay.\n\nQuestions? @dr_Andromeda',
+      'Выбирайте → В корзину → Доставка → Оплата.\n\nВопросы? @dr_Andromeda'
     ),
-    { ...mainMenuKeyboard(chatId) }
+    premiumMenu(chatId)
   );
 });
 
-// ========== LAUNCH ==========
+// ─────── LAUNCH ───────
 if (!BOT_TOKEN) {
   console.log('❌ Set BOT_TOKEN env variable');
   process.exit(1);
 }
 
 bot.launch();
-console.log('✅ Parvati Premium Botanic v5.0 — running');
+console.log(`✅ ${CONFIG.botName} v5.5 Premium — running`);
 
-// Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
