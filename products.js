@@ -35,9 +35,9 @@ const products = [
   { id: 'f10', cat: 'flower', name_en: '🍦 Gelato 3g', name_ru: '🍦 Gelato 3г', price: 950, size: '🌿 3g', desc_en: 'Hybrid · Premium 3g pack', desc_ru: 'Гибрид · Премиум 3г' },
   { id: 'f11', cat: 'flower', name_en: '🌴 Thai Stick 1g', name_ru: '🌴 Thai Stick 1г', price: 80, size: '🌱 1g', desc_en: 'Sativa · Earthy, herbal · Light', desc_ru: 'Сатива · Землистый, травяной' },
   { id: 'f12', cat: 'flower', name_en: '🌴 Thai Stick 5g', name_ru: '🌴 Thai Stick 5г', price: 350, size: '🌳 5g', desc_en: 'Sativa · 5g pack best deal', desc_ru: 'Сатива · Упаковка 5г' },
-  { id: 'f13', cat: 'flower', name_en: '👑 Imperium X Black Berry', name_ru: '👑 Imperium X Black Berry', price: 1350, size: '🌱 1g', desc_en: 'Sativa · Berry, diesel · Uplifting · Premium exotic', desc_ru: 'Сатива · Ягода, дизель · Премиум' },
-  { id: 'f14', cat: 'flower', name_en: '🍇 Black Berry Pop (2s)', name_ru: '🍇 Black Berry Pop (2s)', price: 509, size: '🌱 1g x2', desc_en: 'Hybrid · Sweet berry, grape · Relaxed', desc_ru: 'Гибрид · Ягода, виноград' },
-  { id: 'f15', cat: 'flower', name_en: '🔥 OG Kush Face Off OG', name_ru: '🔥 OG Kush Face Off OG', price: 800, size: '🌱 1g', desc_en: 'Hybrid · Diesel, pine, lemon · Potent', desc_ru: 'Гибрид · Дизель, сосна, лимон' },
+  { id: 'f13', cat: 'flower', name_en: '👑 Imperium X Black Berry 1g', name_ru: '👑 Imperium X Black Berry 1г', price: 1350, size: '🌱 1g', desc_en: 'Sativa · Berry, diesel · Uplifting · Premium exotic', desc_ru: 'Сатива · Ягода, дизель · Премиум' },
+  { id: 'f14', cat: 'flower', name_en: '🍇 Black Berry Pop (2s) 1g', name_ru: '🍇 Black Berry Pop (2s) 1г', price: 509, size: '🌱 1g x2', desc_en: 'Hybrid · Sweet berry, grape · Relaxed', desc_ru: 'Гибрид · Ягода, виноград' },
+  { id: 'f15', cat: 'flower', name_en: '🔥 OG Kush Face Off OG 1g', name_ru: '🔥 OG Kush Face Off OG 1г', price: 800, size: '🌱 1g', desc_en: 'Hybrid · Diesel, pine, lemon · Potent', desc_ru: 'Гибрид · Дизель, сосна, лимон' },
 
   // ---- EDIBLES ----
   { id: 'e1', cat: 'edibles', name_en: '🧸 Gummy Bears 50mg', name_ru: '🧸 Мармелад 50мг', price: 200, size: '5 🧸', desc_en: 'Fruity assorted flavors · Mild', desc_ru: 'Фруктовые вкусы' },
