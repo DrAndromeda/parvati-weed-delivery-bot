@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-// 🌿 Parvati Weed Bot — Чистая версия. Только трава + кратом.
+// 🌿 Parvati Weed Bot — v3.2 с картинками товаров + исправленная система размеров
 const { Telegraf, Markup } = require('telegraf');
-const { products, categories } = require('./products_spar_city');
+const { products, categories } = require('./products_spar_city_v2');
 const path = require('path');
 const fs = require('fs');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ADMIN_ID = Number(process.env.ADMIN_ID || '237228075');
-const PHOTO_DIR = __dirname;
 
-// ─── Данные ───
+// ─── Система размеров (исправленная) ───
 const DELIVERY = [
   { id: 'bangkok', en: '📍 Bangkok',ru: '📍 Бангкок', price: 100 },
   { id: 'phuket', en: '📍 Phuket',ru: '📍 Пхукет', price: 300 },
@@ -24,15 +23,44 @@ const PAYMENTS = [
 ];
 
 const SIZES = [
-  { id:'gram', label:'🌱 1g' }, { id:'eighth', label:'🔥 3.5g' },
-  { id:'quarter', label:'🌈 7g' }, { id:'half', label:'💎 14g' }, { id:'ounce', label:'👑 28g' },
+  { id:'joint',  label:'🚬 Joint', wt:1 },
+  { id:'gram',   label:'🌱 1g',    wt:1 },
+  { id:'eighth', label:'🔥 3.5g',  wt:3.5 },
+  { id:'fiveg',  label:'⭐ 5g',    wt:5 },
+  { id:'quarter',label:'🌈 7g',    wt:7 },
+  { id:'teng',   label:'💫 10g',   wt:10 },
+  { id:'half',   label:'💎 14g',   wt:14 },
+  { id:'ounce',  label:'👑 28g',   wt:28 },
 ];
 
-const SIZE_KEY = { gram:'price_gram', eighth:'price_8th', quarter:'price_quarter', half:'price_half', ounce:'price_ounce' };
-const SIZE_WT = { gram:'1g', eighth:'3.5g', quarter:'7g', half:'14g', ounce:'28g' };
+const SIZE_KEY = {
+  joint:'price_joint', gram:'price_gram', eighth:'price_8th',
+  fiveg:'price_8th', quarter:'price_quarter', teng:'price_quarter',
+  half:'price_half', ounce:'price_ounce'
+};
+
+function SIZE_WT(id) {
+  const s = SIZES.find(x => x.id === id);
+  return s ? `${s.wt}g` : '1g';
+}
+
+function getPrice(p, sizeId) {
+  const s = SIZES.find(x => x.id === sizeId);
+  if (!s) return 0;
+  const key = SIZE_KEY[sizeId];
+  const base = p[key];
+  // Для 5g и 10g — price_gram * weight
+  if (['fiveg','teng'].includes(sizeId)) return Math.round(p.price_gram * s.wt);
+  return base || Math.round(p.price_gram * s.wt);
+}
+
+function fmtSize(p, sizeId) {
+  const price = getPrice(p, sizeId);
+  const s = SIZES.find(x => x.id === sizeId);
+  return `${s.label} — ${price}฿`;
+}
 
 const user = {};
-
 function lang(chatId) { return user[chatId]?.lang || 'en'; }
 function t(chatId, en, ru) { return lang(chatId) === 'en' ? en : ru; }
 
@@ -41,7 +69,7 @@ function total(chatId) {
   let sum = 0;
   c.forEach(i => {
     const p = products.find(x => x.id === i.id);
-    if (p) sum += (p[SIZE_KEY[i.size]] || 0) * i.qty;
+    if (p) sum += getPrice(p, i.size) * i.qty;
   });
   return sum;
 }
@@ -54,10 +82,10 @@ function cartText(chatId) {
   c.forEach((i,idx) => {
     const p = products.find(x => x.id === i.id);
     if (p) {
-      const price = p[SIZE_KEY[i.size]] || 0;
+      const price = getPrice(p, i.size);
       const itemSum = price * i.qty;
       sum += itemSum;
-      text += `${idx+1}. ${p.name_en} ${SIZE_WT[i.size]} ×${i.qty} — ${itemSum}฿\n`;
+      text += `${idx+1}. ${p.name_en} ${SIZE_WT(i.size)} ×${i.qty} — ${itemSum}฿\n`;
     }
   });
   text += `\n💰 *Total: ${sum} THB*`;
@@ -82,11 +110,12 @@ function menu(chatId) {
 const bot = new Telegraf(BOT_TOKEN);
 
 bot.start(async (ctx) => {
+  const chatId = ctx.chat.id;
   const buttons = [
     [Markup.button.callback('🇬🇧 English', 'lang_en')],
     [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
   ];
-  const caption = t(ctx.chat.id,
+  const caption = t(chatId,
     '🌿 *Welcome to Parvati Weed Thailand*\nPremium cannabis & kratom delivery 🚀\n🇬🇧 English / 🇷🇺 Русский',
     '🌿 *Добро пожаловать в Parvati Weed Thailand*\nПремиум доставка травы и кратома 🚀\n🇬🇧 English / 🇷🇺 Русский'
   );
@@ -97,10 +126,7 @@ bot.start(async (ctx) => {
       reply_markup: { inline_keyboard: buttons }
     });
   } else {
-    await ctx.reply(caption, {
-      parse_mode: 'Markdown',
-      reply_markup: { inline_keyboard: buttons }
-    });
+    await ctx.reply(caption, { parse_mode:'Markdown', reply_markup:{ inline_keyboard: buttons } });
   }
 });
 
@@ -108,10 +134,12 @@ bot.action('lang_en', async (ctx) => {
   user[ctx.chat.id] = { lang:'en', cart:[] };
   await ctx.editMessageText('🌿 Welcome! Choose:', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
 });
+
 bot.action('lang_ru', async (ctx) => {
   user[ctx.chat.id] = { lang:'ru', cart:[] };
   await ctx.editMessageText('🌿 Добро пожаловать! Выберите:', { parse_mode:'Markdown', ...menu(ctx.chat.id) });
 });
+
 bot.action('lang_menu', async (ctx) => {
   await ctx.editMessageText('🌍 Language:', {
     reply_markup: { inline_keyboard: [
@@ -142,10 +170,58 @@ products.forEach(p => {
     const chatId = ctx.chat.id;
     const isEn = lang(chatId) === 'en';
     let text = `✦ *${p.name_en}* ✦\n🏆 ${p.grade} | 🌸 ${p.type}\n\n${isEn ? p.description_en : p.description_ru}\n\n✨ ${p.effects.map(e=>`#${e.replace(/\s/g,'')}`).join(' ')}\n\n💰 *Prices:*\n`;
-    SIZES.forEach(s => text += `${s.label} — ${p[SIZE_KEY[s.id]]}฿\n`);
+    SIZES.forEach(s => {
+      text += `${s.label} — ${getPrice(p, s.id)}฿\n`;
+    });
     text += `\n📦 ${p.stock}g`;
 
-    const sb = SIZES.map(s => Markup.button.callback(`${s.label} ${p[SIZE_KEY[s.id]]}฿`, `add_${p.id}_${s.id}`));
+    const sb = SIZES.map(s => Markup.button.callback(`${s.label} ${getPrice(p, s.id)}฿`, `add_${p.id}_${s.id}`));
+    const rows = [];
+    for (let i=0; i<sb.length; i+=2) rows.push(sb.slice(i,i+2));
+    rows.push([
+      Markup.button.callback(t(chatId,'🔙 Back','🔙 Назад'), `cat_${p.cat}`),
+      Markup.button.callback('🛒 Cart', 'cart'),
+    ]);
+
+    // Отправляем с картинкой если есть
+    const imgPath = path.join(__dirname, p.image);
+    if (p.image && fs.existsSync(imgPath)) {
+      await ctx.deleteMessage().catch(()=>{});
+      await ctx.replyWithPhoto({ source: imgPath }, {
+        caption: text,
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: rows }
+      });
+    } else {
+      await ctx.editMessageText(text, { parse_mode:'Markdown', reply_markup:{ inline_keyboard:rows } });
+    }
+  });
+});
+
+// Обработчик добавления в корзину — для всех размеров
+SIZES.forEach(s => {
+  bot.action(/^add_/, async (ctx) => {
+    const data = ctx.match ? ctx.match[0] : ctx.callbackQuery.data;
+    const parts = data.replace('add_','').split('_');
+    const pid = parts[0];
+    const sizeId = parts.slice(1).join('_');
+    const p = products.find(x => x.id === pid);
+    if (!p) { await ctx.answerCbQuery('❌ Error'); return; }
+    const chatId = ctx.chat.id;
+    if (!user[chatId]) user[chatId] = { lang:'en', cart:[] };
+    const ex = user[chatId].cart.find(i => i.id===pid && i.size===sizeId);
+    if (ex) ex.qty++;
+    else user[chatId].cart.push({ id:pid, size:sizeId, qty:1 });
+    await ctx.answerCbQuery(`✅ ${p.name_en} ${SIZE_WT(sizeId)} +1`);
+
+    // Перерисовка карточки
+    const isEn = lang(chatId)==='en';
+    let text = `✦ *${p.name_en}* ✦\n🏆 ${p.grade} | 🌸 ${p.type}\n\n${isEn ? p.description_en : p.description_ru}\n\n✨ ${p.effects.map(e=>`#${e.replace(/\s/g,'')}`).join(' ')}\n\n💰 *Prices:*\n`;
+    SIZES.forEach(sz => {
+      text += `${sz.label} — ${getPrice(p, sz.id)}฿\n`;
+    });
+    text += `\n📦 ${p.stock}g`;
+    const sb = SIZES.map(sz => Markup.button.callback(`${sz.label} ${getPrice(p, sz.id)}฿`, `add_${pid}_${sz.id}`));
     const rows = [];
     for (let i=0; i<sb.length; i+=2) rows.push(sb.slice(i,i+2));
     rows.push([
@@ -153,32 +229,6 @@ products.forEach(p => {
       Markup.button.callback('🛒 Cart', 'cart'),
     ]);
     await ctx.editMessageText(text, { parse_mode:'Markdown', reply_markup:{ inline_keyboard:rows } });
-  });
-});
-
-products.forEach(p => {
-  SIZES.forEach(s => {
-    bot.action(`add_${p.id}_${s.id}`, async (ctx) => {
-      const chatId = ctx.chat.id;
-      if (!user[chatId]) user[chatId] = { lang:'en', cart:[] };
-      const ex = user[chatId].cart.find(i => i.id===p.id && i.size===s.id);
-      if (ex) ex.qty++;
-      else user[chatId].cart.push({ id:p.id, size:s.id, qty:1 });
-      await ctx.answerCbQuery(`✅ ${p.name_en} ${SIZE_WT[s.id]} +1`);
-      // перерисовать карточку
-      const isEn = lang(chatId)==='en';
-      let text = `✦ *${p.name_en}* ✦\n🏆 ${p.grade} | 🌸 ${p.type}\n\n${isEn ? p.description_en : p.description_ru}\n\n✨ ${p.effects.map(e=>`#${e.replace(/\s/g,'')}`).join(' ')}\n\n💰 *Prices:*\n`;
-      SIZES.forEach(sz => text += `${sz.label} — ${p[SIZE_KEY[sz.id]]}฿\n`);
-      text += `\n📦 ${p.stock}g`;
-      const sb = SIZES.map(sz => Markup.button.callback(`${sz.label} ${p[SIZE_KEY[sz.id]]}฿`, `add_${p.id}_${sz.id}`));
-      const rows = [];
-      for (let i=0; i<sb.length; i+=2) rows.push(sb.slice(i,i+2));
-      rows.push([
-        Markup.button.callback(t(chatId,'🔙 Back','🔙 Назад'), `cat_${p.cat}`),
-        Markup.button.callback('🛒 Cart', 'cart'),
-      ]);
-      await ctx.editMessageText(text, { parse_mode:'Markdown', reply_markup:{ inline_keyboard:rows } });
-    });
   });
 });
 
@@ -210,13 +260,7 @@ bot.action(/^inc_(\d+)$/, async (ctx) => {
   const chatId=ctx.chat.id, idx=parseInt(ctx.match[1]);
   if (user[chatId]?.cart?.[idx]) user[chatId].cart[idx].qty++;
   await ctx.answerCbQuery('+1');
-  ctx.deleteMessage().catch(()=>{});
-  const text=cartText(chatId);
-  if (!text) { await ctx.editMessageText(t(chatId,'Empty','Пусто'), menu(chatId)); return; }
-  const rows=[];(user[chatId]?.cart||[]).forEach((item,i)=>{rows.push([Markup.button.callback('➖',`dec_${i}`),Markup.button.callback(`${item.qty}`,`q_${i}`),Markup.button.callback('➕',`inc_${i}`),Markup.button.callback('🗑️',`del_${i}`)])});
-  rows.push([Markup.button.callback(t(chatId,'🛍️ Menu','🛍️ Меню'),'shop'),Markup.button.callback(t(chatId,'🗑️ Clear','🗑️ Очистить'),'clear')]);
-  rows.push([Markup.button.callback(t(chatId,'✅ Order','✅ Заказ'),'checkout')]);
-  await ctx.editMessageText(text,{parse_mode:'Markdown',reply_markup:{inline_keyboard:rows}});
+  rebuildCart(ctx, chatId);
 });
 
 bot.action(/^dec_(\d+)$/, async (ctx) => {
@@ -226,13 +270,20 @@ bot.action(/^dec_(\d+)$/, async (ctx) => {
     if (user[chatId].cart[idx].qty<=0) user[chatId].cart.splice(idx,1);
   }
   await ctx.answerCbQuery('-1');
+  rebuildCart(ctx, chatId);
+});
+
+async function rebuildCart(ctx, chatId) {
   const text=cartText(chatId);
-  if (!text) { await ctx.editMessageText(t(chatId,'Empty','Пусто'), menu(chatId)); return; }
-  const rows=[];(user[chatId]?.cart||[]).forEach((item,i)=>{rows.push([Markup.button.callback('➖',`dec_${i}`),Markup.button.callback(`${item.qty}`,`q_${i}`),Markup.button.callback('➕',`inc_${i}`),Markup.button.callback('🗑️',`del_${i}`)])});
+  if (!text) { await ctx.editMessageText(t(chatId,'🛒 Empty','🛒 Пусто'), { parse_mode:'Markdown', ...menu(chatId) }); return; }
+  const rows=[];
+  (user[chatId]?.cart||[]).forEach((item,i)=>{
+    rows.push([Markup.button.callback('➖',`dec_${i}`),Markup.button.callback(`${item.qty}`,`q_${i}`),Markup.button.callback('➕',`inc_${i}`),Markup.button.callback('🗑️',`del_${i}`)]);
+  });
   rows.push([Markup.button.callback(t(chatId,'🛍️ Menu','🛍️ Меню'),'shop'),Markup.button.callback(t(chatId,'🗑️ Clear','🗑️ Очистить'),'clear')]);
   rows.push([Markup.button.callback(t(chatId,'✅ Order','✅ Заказ'),'checkout')]);
   await ctx.editMessageText(text,{parse_mode:'Markdown',reply_markup:{inline_keyboard:rows}});
-});
+}
 
 bot.action('clear', async (ctx) => {
   const chatId=ctx.chat.id;
@@ -243,7 +294,7 @@ bot.action('clear', async (ctx) => {
 bot.action('checkout', async (ctx) => {
   const chatId=ctx.chat.id;
   const text=cartText(chatId);
-  if (!text) { await ctx.editMessageText(t(chatId,'Empty','Пусто'), menu(chatId)); return; }
+  if (!text) { await ctx.editMessageText(t(chatId,'🛒 Empty','🛒 Пусто'), { parse_mode:'Markdown', ...menu(chatId) }); return; }
   const btns = DELIVERY.map(d => [Markup.button.callback(`${d.en} +${d.price}฿`, `del_${d.id}`)]);
   await ctx.editMessageText(`${text}\n\n📍 ${t(chatId,'Delivery:','Доставка:')}`, { parse_mode:'Markdown', reply_markup:{ inline_keyboard:btns } });
 });
@@ -285,9 +336,9 @@ bot.action('confirm', async (ctx) => {
   cart.forEach(i=>{
     const p=products.find(x=>x.id===i.id);
     if (p){
-      const pr=p[SIZE_KEY[i.size]]||0, st=pr*i.qty;
+      const pr=getPrice(p,i.size), st=pr*i.qty;
       sum+=st;
-      order+=`• ${p.name_en} (${SIZE_WT[i.size]})×${i.qty}=${st}฿\n`;
+      order+=`• ${p.name_en} (${SIZE_WT(i.size)})×${i.qty}=${st}฿\n`;
     }
   });
   order+=`━━━━━━━━━━\n📍 ${d.en}+${d.price}฿\n💳 ${m.icon} ${m.en}\n💰 *${sum+d.price} THB*\n\n👤 User: [${chatId}](tg://user?id=${chatId})`;
@@ -295,7 +346,7 @@ bot.action('confirm', async (ctx) => {
   user[chatId].cart=[];
   delete user[chatId].delivery;
   delete user[chatId].payment;
-  await ctx.editMessageText(t(chatId,`✅ *Done!* ${sum+d.price} THB\nWe\'ll contact you 📲`,`✅ *Готово!* ${sum+d.price} THB\nСвяжемся 📲`),{parse_mode:'Markdown',...menu(chatId)});
+  await ctx.editMessageText(t(chatId,`✅ *Done!* ${sum+d.price} THB\nWe'll contact you 📲`,`✅ *Готово!* ${sum+d.price} THB\nСвяжемся 📲`),{parse_mode:'Markdown',...menu(chatId)});
 });
 
 bot.action('faq', async (ctx) => {
@@ -320,7 +371,7 @@ bot.action('back', async (ctx) => {
 
 if (!BOT_TOKEN) { console.error('❌ No token'); process.exit(1); }
 bot.launch();
-console.log('🚀 Parvati Weed — Clean v3.1');
-console.log(`Admin: ${ADMIN_ID} | Products: ${products.length}`);
+console.log('🚀 Parvati Weed — v3.2');
+console.log(`Admin: ${ADMIN_ID} | Products: ${products.length} | Images: ✓`);
 process.once('SIGINT',()=>bot.stop('SIGINT'));
 process.once('SIGTERM',()=>bot.stop('SIGTERM'));
