@@ -284,8 +284,8 @@ allGroupNames.forEach(groupName => {
     
     const buttons = sizes.map(s => {
       const p = products.find(pr => pr.id === s.id);
-      if (!p) return [Markup.button.callback(`${s.size} - ${s.price} THB`, 'noop')];
-      return [Markup.button.callback(`${s.size} — ${s.price} THB  👁️`, `info_${s.id}`)];
+      if (!p) return [Markup.button.callback(`- ${s.price} THB`, 'noop')];
+      return [Markup.button.callback(`${p.size || '📦'} — ${p.price} THB  👁️`, `info_${s.id}`)];
     });
     buttons.push([Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]);
 
@@ -312,34 +312,63 @@ products.forEach(p => {
 });
 
 // ===== PRODUCT CARD =====
+function buildProductCard(chatId, p) {
+  // For size-variant products, show all sizes
+  if (isSizeVariant(p.id)) {
+    const groupName = getGroupName(p.id);
+    const siblings = getSiblingSizes(p.id);
+    
+    let text = t(chatId,
+      `━━━━━━━━━━━━━━━\n`, `━━━━━━━━━━━━━━━\n`
+    );
+    text += t(chatId,
+      `🌿 *${groupName}*\n`,
+      `🌿 *${groupName}*\n`
+    );
+    text += t(chatId,
+      `━━━━━━━━━━━━━━━\n`,
+      `━━━━━━━━━━━━━━━\n`
+    );
+    
+    // Show all size options with prices in a table-like format
+    siblings.forEach(s => {
+      text += `${s.size || '📦'}  ─  💰 *${s.price} THB*\n`;
+    });
+    
+    text += t(chatId,
+      `\n📝 ${siblings[0]?.desc_en || ''}\n`,
+      `\n📝 ${siblings[0]?.desc_ru || ''}\n`
+    );
+    
+    // Build size selection buttons
+    const sizeButtons = siblings.map(s => [
+      Markup.button.callback(`🛒 ${s.size || '📦'}`, `add_${s.id}`)
+    ]);
+    sizeButtons.push([Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]);
+    
+    return { text, buttons: sizeButtons };
+  }
+  
+  // Standalone product
+  const text = t(chatId,
+    `━━━━━━━━━━━━━━━\n🌿 *${p.name_en}*\n━━━━━━━━━━━━━━━\n📐 ${p.size || '📦'}\n💰 *${p.price} THB*\n━━━━━━━━━━━━━━━\n📝 ${p.desc_en}`,
+    `━━━━━━━━━━━━━━━\n🌿 *${p.name_ru}*\n━━━━━━━━━━━━━━━\n📐 ${p.size || '📦'}\n💰 *${p.price} THB*\n━━━━━━━━━━━━━━━\n📝 ${p.desc_ru}`
+  );
+  
+  return {
+    text,
+    buttons: [
+      [Markup.button.callback('🛒 ' + t(chatId, 'Add to Cart', 'В корзину'), `add_${p.id}`)],
+      [Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]
+    ]
+  };
+}
+
 products.forEach(p => {
   bot.action(`info_${p.id}`, async (ctx) => {
     const chatId = ctx.chat.id;
-    const sizeEmoji = p.size || '📦';
-    
-    const text = t(chatId,
-      `*${p.name_en}*
-━━━━━━━━━━━━━━━
-📐 *Size:* ${sizeEmoji}
-💰 *Price:* ${p.price} THB
-📝 *Description:* ${p.desc_en}
-
-━━━━━━━━━━━━━━━
-👇 _Add to cart or go back_`,
-      `*${p.name_ru}*
-━━━━━━━━━━━━━━━
-📐 *Размер:* ${sizeEmoji}
-💰 *Цена:* ${p.price} THB
-📝 *Описание:* ${p.desc_ru}
-
-━━━━━━━━━━━━━━━
-👇 _Добавить или назад_`
-    );
-
-    await replyWithMenu(chatId, ctx, text, [
-      [Markup.button.callback('🛒 ' + t(chatId, 'Add to Cart', 'В корзину'), `add_${p.id}`)],
-      [Markup.button.callback(t(chatId, '🔙 Back', '🔙 Назад'), 'shop')]
-    ]);
+    const card = buildProductCard(chatId, p);
+    await replyWithMenu(chatId, ctx, card.text, card.buttons);
   });
 });
 
