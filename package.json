@@ -1,12 +1,12 @@
 {
   "name": "parvati-weed-thailand-bot",
-  "version": "1.0.0",
-  "description": "Premium cannabis delivery Telegram bot for Thailand",
-  "main": "bot_v2.js",
+  "version": "2.0.0",
+  "description": "Premium cannabis delivery Telegram bot for Thailand — PromptPay, Cash, Crypto payments, size variants, multilingual",
+  "main": "bot.js",
   "scripts": {
-    "start": "node bot_v2.js",
-    "dev": "nodemon bot_v2.js",
-    "v2": "node bot_v2.js"
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "test": "node test.js"
   },
   "keywords": [
     "telegram",
@@ -15,12 +15,16 @@
     "delivery",
     "cannabis",
     "weed",
-    "parvati"
+    "parvati",
+    "promptpay",
+    "crypto",
+    "openclaw"
   ],
-  "author": "DrAndromeda",
+  "author": "DrAndromeda & OpenClaw Agents",
   "license": "MIT",
   "dependencies": {
-    "telegraf": "^4.0.0"
+    "telegraf": "^4.0.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"
